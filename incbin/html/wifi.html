@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang='ja'><head><meta charset='UTF-8'><style>
+html,body{margin:0;padding:0;font-family:sans-serif;background-color:#f5f5f5}
+.ct{min-height:100%;width:85%;margin:0 auto;display:flex;flex-direction: column;font-size:5vw}
+h1{display:block;margin:0;padding:3vw 0;font-size:8vw}
+h2{margin:0;padding:2vw 3vw;border-radius:2vw 2vw 0 0;font-size:6vw;background-color:#909ba1}
+h1,.ft{text-align:center}
+.ft{padding:10px 0;font-size:4vw}
+.main{flex-grow:1}
+.ls{border-radius:2vw;background-color:#bfced6}
+a{padding:3vw;display:block;color:#000;border-bottom:1px solid #eee;text-decoration:none}
+a.active,a:hover{color:#fff;background-color:#8b2de2}
+a:last-child:hover{border-radius:0 0 2vw 2vw}
+form {margin:0; position:relative;}
+.fg{margin:10px 0;padding:5px}
+.fg input{margin-top:5px;padding:5px 10px;width:100%;border:1px solid #000;outline:none;border-radius:2vw;font-size:6vw}
+.fg select{margin-top:5px;padding:5px 10px;width:100%;border:1px solid #000;outline:none;border-radius:2vw;font-size:6vw}
+#dd {display:none;margin-top:5px;padding:5px 10px;width:100%;border:1px solid #000;outline:none;border-radius:2vw;font-size:6vw}
+.fc{padding-left:2vw}
+.fc input[type="checkbox"]{width:5vw;height:5vw;vertical-align:middle}
+.fc button{margin:10px 0 0 0;padding:10px;width:100%;font-size:8vw;border:none;border-radius:2vw;background-color:#3aee70;outline:none;cursor:pointer}
+#dd div { padding: 8px; cursor: pointer; }
+#dd div:hover { background-color: #f1f1f1; }
+</style></head>
+<body></head><body><div class='ct'><h1>KantanPlayCore</h1><h2>WiFi setup</h2>
+<div class='main'><form method='POST' action='wifi' autocomplete='off'>
+<div class='fg'><label for='s'>SSID: </label><input name='s' id='s' placeholder='input or select' onfocus='showdd()' oninput='fltdd()'></div>
+<div id='dd'></div>
+<div class='fg'><label for='p'>Password: </label><input name='p' id='p' maxlength='64' type='password' placeholder='Password'></div>
+<div class='fc'><input id='show_pwd' type='checkbox' onclick='h()'><label for='show_pwd'>Show Password</label>
+<button type='submit'>Save</button></div>
+</form></div></div></body>
+<script>
+let ssids = [];
+async function getssid() {
+const res = await fetch('/ssid');
+const data = await res.json();
+ssids = data.ssids;}
+function h() { var p=document.getElementById('p');p.type==='text'?p.type='password':p.type='text';}
+function showdd() {
+const dd = document.getElementById('dd');
+dd.innerHTML = ssids.map(ssid => '<div onclick="selopt(\'' + ssid + '\') ">' + ssid + '</div>').join('');
+dd.style.display = 'block';}
+function fltdd(){const input=document.getElementById('s').value.toLowerCase();
+const dd=document.getElementById('dd');
+dd.innerHTML=ssids.filter(ssid => ssid.toLowerCase().includes(input)).map(ssid=>'<div onclick="selopt(\'' + ssid + '\') ">' + ssid + '</div>').join('');
+dd.style.display=dd.innerHTML?'block':'none';}
+function selopt(value) {document.getElementById('s').value=value;document.getElementById('dd').style.display='none';}
+document.addEventListener('click',e=>{if(e.target.id!=='s')document.getElementById('dd').style.display='none';});
+document.addEventListener('DOMContentLoaded',getssid);
+</script></html>
+
