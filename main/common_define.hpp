@@ -12,6 +12,14 @@
 
 namespace kanplay_ns {
 //-------------------------------------------------------------------------
+namespace def::lang {
+  enum class language_t : uint8_t {
+    en = 0,
+    ja,
+    max_language,
+  };
+};
+//-------------------------------------------------------------------------
 class text_t {
 public:
   virtual const char* get(void) const = 0;
@@ -39,15 +47,25 @@ public:
   constexpr simple_text_array_t(size_t size, const simple_text_t* text_array) : _text_array { text_array }, _size { size } {}
 };
 
+class localize_text_t : public text_t {
+  const char* text[(uint8_t)def::lang::language_t::max_language] = { nullptr, };
+public:
+  const char* get(void) const override;
+  constexpr localize_text_t(const char* en_ = nullptr, const char* ja_ = nullptr) : text { en_, ja_ } {}
+};
+
+class localize_text_array_t : public text_array_t {
+  const localize_text_t* _text_array;
+  size_t _size;
+public:
+  const text_t* at(size_t index) const override { return &_text_array[index]; }
+  size_t size(void) const override { return _size; }
+  constexpr localize_text_array_t(size_t size, const localize_text_t* text_array) : _text_array { text_array }, _size { size } {}
+};
+
 //-------------------------------------------------------------------------
 namespace def {
-  namespace lang {
-    enum class language_t : uint8_t {
-      en = 0,
-      ja,
-      max_language,
-    };
-  };
+
   enum menu_category_t : uint8_t {
     menu_none = 0,
     menu_system = 1,
@@ -263,8 +281,8 @@ Button Index mapping
       chord_modifier,     // パラメータは KANTANMusic::Modifierと合わせる
       chord_minor_swap,   // メジャーマイナー入替
       chord_semitone,     // 半音シフト 1:半音下げる(flat)down 2:半音上げる(sharp)up
-      chord_base_degree,     // オンコード演奏用のコード選択ボタン 1~7
-      chord_base_semitone,   // オンコード演奏用の半音シフト 1:半音下げる(flat)down 2:半音上げる(sharp)up
+      chord_bass_degree,     // オンコード演奏用のコード選択ボタン 1~7
+      chord_bass_semitone,   // オンコード演奏用の半音シフト 1:半音下げる(flat)down 2:半音上げる(sharp)up
       edit_function,
       edit_exit,
       edit_enc2_target,
@@ -282,7 +300,7 @@ Button Index mapping
       edit_enc2_ud,
       set_velocity,
       menu_open,
-      main_button,        // メインボタンへのマッピング (WebSocket等で利用)
+      internal_button,        // メインボタンへのマッピング (WebSocket等で利用)
       panic_stop,
       command_max,
     };
@@ -301,8 +319,8 @@ Button Index mapping
       (const char*[]){ "-", "dim", "m7-5", "sus4", "6", "7", "RESERVED", "add9", "M7", "aug", "7sus4", "dim7", }, // chord_modifier
       (const char*[]){ "-", "〜", },                  // chord_minor_swap
       (const char*[]){ "-", "♭", "♯", },            // chord_semitone
-      (const char*[]){ "-", "I", "II", "III", "IV", "V", "VI", "VII", }, // chord_base_degree
-      (const char*[]){ "-", "♭", "♯", },            // chord_base_semitone
+      (const char*[]){ "-", "I", "II", "III", "IV", "V", "VI", "VII", }, // chord_bass_degree
+      (const char*[]){ "-", "♭", "♯", },            // chord_bass_semitone
       (const char*[]){ "-", "←", "→", "↓", "↑", "<<", ">>", "Home", "On", "Off", "Mute", "ON/of", "CLEAR", "COPY", "PASTE" },            // edit_function
       (const char*[]){ "-", "×", "SAVE" },            // edit_exit
       (const char*[]){ "-", "Vol %", "Oct", "Voicing", "Velo %", "Tone", "Anchor", "LoopLen", "Stroke" },   // edit_enc2_target
@@ -416,8 +434,17 @@ Button Index mapping
       constexpr command_param_array_t (const command_param_t& cp)
        : array{ cp, command_param_t(), command_param_t(), command_param_t() } {}
 
-      constexpr command_param_array_t (command_t command1 = none, int param1 = 0, command_t command2 = none, int param2 = 0)
-       : array{ command_param_t(command1, param1), command_param_t(command2, param2) } {}
+      constexpr command_param_array_t
+        ( command_t command1 = none, int param1 = 0
+        , command_t command2 = none, int param2 = 0
+        , command_t command3 = none, int param3 = 0
+        , command_t command4 = none, int param4 = 0
+        )
+       : array{ command_param_t(command1, param1)
+              , command_param_t(command2, param2)
+              , command_param_t(command3, param3)
+              , command_param_t(command4, param4)
+            } {}
 
       // uint32_t からの変換
       explicit constexpr command_param_array_t (uint32_t raw0, uint32_t raw1 = 0) : raw32_0 { raw0 }, raw32_1 { raw1 } {}
@@ -600,8 +627,8 @@ Button Index mapping
     // 外部デバイス用のボタン-コマンドマッピング
     static constexpr const command_param_array_t command_mapping_external_table[] = {
   // ByteButton
-      { chord_base_semitone, 1 }, { chord_base_degree, 1 }, { chord_base_degree, 2 }, { chord_base_degree, 3 },
-      { chord_base_degree, 4 }, { chord_base_degree, 5 }, { chord_base_degree, 6 }, { chord_base_degree, 7 },
+      { chord_bass_semitone, 1 }, { chord_bass_degree, 1 }, { chord_bass_degree, 2 }, { chord_bass_degree, 3 },
+      { chord_bass_degree, 4 }, { chord_bass_degree, 5 }, { chord_bass_degree, 6 }, { chord_bass_degree, 7 },
   // ExtIO2
       { chord_degree, 1}, { chord_degree, 2 }, { chord_degree, 3 }, { chord_degree    , 4 },
       { chord_degree, 5}, { chord_degree, 6 }, { chord_degree, 7 }, { chord_minor_swap, 1 },
@@ -803,6 +830,50 @@ Button Index mapping
     };
     // static constexpr const char setting_filename[] = "setting.json";
   };
+
+  namespace ctrl_assign {
+    struct command_name_t {
+      const char* jsonname;
+      localize_text_t text;
+      def::command::command_param_array_t command;
+    };
+    int get_index_from_command(const command_name_t* data, const def::command::command_param_array_t& command);
+    int get_index_from_jsonname(const command_name_t* data, const char* name);
+
+    static constexpr const command_name_t command_name[] = {
+      { "dim"   , { "dim",   "dim"   }, { def::command::chord_modifier   , KANTANMusic_Modifier_dim }   },
+      { "m7_5"  , { "m7_5",  "m7_5"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_m7_5 }  },
+      { "sus4"  , { "sus4",  "sus4"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_sus4 }  },
+      { "6"     , { "6",     "6"     }, { def::command::chord_modifier   , KANTANMusic_Modifier_6 }     },
+      { "7"     , { "7",     "7"     }, { def::command::chord_modifier   , KANTANMusic_Modifier_7 }     },
+      { "Add9"  , { "Add9",  "Add9"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_Add9 }  },
+      { "M7"    , { "M7",    "M7"    }, { def::command::chord_modifier   , KANTANMusic_Modifier_M7 }    },
+      { "aug"   , { "aug",   "aug"   }, { def::command::chord_modifier   , KANTANMusic_Modifier_aug }   },
+      { "7sus4" , { "7sus4", "7sus4" }, { def::command::chord_modifier   , KANTANMusic_Modifier_7sus4 } },
+      { "dim7"  , { "dim7",  "dim7"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_dim7 }  },
+      { "swap"  , { "〜",    "〜"    }, { def::command::chord_minor_swap , 1 }                          },
+      { "flat"  , { "♭",    "♭"    }, { def::command::chord_semitone   , 1 }                          },
+      { "sharp" , { "♯",    "♯"    }, { def::command::chord_semitone   , 2 }                          },
+      nullptr, {},
+    };
+    static constexpr const command_name_t external_table[] = {
+      { "dim"   , { "dim",   "dim"   }, { def::command::chord_modifier   , KANTANMusic_Modifier_dim }   },
+      { "m7_5"  , { "m7_5",  "m7_5"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_m7_5 }  },
+      { "sus4"  , { "sus4",  "sus4"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_sus4 }  },
+      { "6"     , { "6",     "6"     }, { def::command::chord_modifier   , KANTANMusic_Modifier_6 }     },
+      { "7"     , { "7",     "7"     }, { def::command::chord_modifier   , KANTANMusic_Modifier_7 }     },
+      { "Add9"  , { "Add9",  "Add9"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_Add9 }  },
+      { "M7"    , { "M7",    "M7"    }, { def::command::chord_modifier   , KANTANMusic_Modifier_M7 }    },
+      { "aug"   , { "aug",   "aug"   }, { def::command::chord_modifier   , KANTANMusic_Modifier_aug }   },
+      { "7sus4" , { "7sus4", "7sus4" }, { def::command::chord_modifier   , KANTANMusic_Modifier_7sus4 } },
+      { "dim7"  , { "dim7",  "dim7"  }, { def::command::chord_modifier   , KANTANMusic_Modifier_dim7 }  },
+      { "swap"  , { "〜",    "〜"    }, { def::command::chord_minor_swap , 1 }                          },
+      { "flat"  , { "♭",    "♭"    }, { def::command::chord_semitone   , 1 }                          },
+      { "sharp" , { "♯",    "♯"    }, { def::command::chord_semitone   , 2 }                          },
+      nullptr, {},
+    };
+  }
+
   namespace ntp {
     static constexpr const char* server1 = "0.pool.ntp.org";
     static constexpr const char* server2 = "1.pool.ntp.org";

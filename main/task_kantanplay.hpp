@@ -72,8 +72,8 @@ private:
 
   // 現在のDegree(度数)
   uint8_t _degree;
-  uint8_t _base_degree;
-  int8_t _base_semitone;
+  uint8_t _bass_degree;
+  int8_t _bass_semitone;
   bool _step_reset_request = false;
 };
 

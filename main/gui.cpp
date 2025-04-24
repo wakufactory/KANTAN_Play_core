@@ -2160,7 +2160,7 @@ static ui_chord_part_container_t ui_chord_part_container;
 struct ui_menu_header_t : public ui_base_t
 {
 protected:
-  static constexpr const size_t max_ancestors_size = 4;
+  static constexpr const size_t max_ancestors_size = 6;
   struct ancestors_t {
     const char* title;
     int16_t current_x = main_area_width;
@@ -2444,9 +2444,10 @@ public:
 struct menu_drawer_tree_t : public menu_drawer_list_t
 {
 protected:
-  static constexpr const int max_children_size = 10;
+  // static constexpr const int max_children_size = 10;
+  // menu_item_ptr _item_array[max_children_size + 1];
   registry_t::history_code_t _history_code;
-  menu_item_ptr _item_array[max_children_size + 1];
+  std::vector<menu_item_ptr> _item_array;
   uint8_t _childrens_count = 0;
   uint8_t _level;
 
@@ -2455,11 +2456,18 @@ public:
   : menu_drawer_list_t(menu_index, menu_item)
   {
     _level = menu_item->getLevel();
-    uint8_t seq_list[max_children_size];
-    _childrens_count = menu_control.getChildrenSequenceList(seq_list, max_children_size, menu_index);
+    std::vector<uint16_t> seq_list;
+    _childrens_count = menu_control.getChildrenSequenceList(&seq_list, menu_index);
     for (int i = 0; i < _childrens_count; ++i) {
-      _item_array[i] = menu_control.getItemBySequance(seq_list[i]);
+      _item_array.push_back(menu_control.getItemBySequance(seq_list[i]));
     }
+/*
+uint8_t seq_list[max_children_size];
+_childrens_count = menu_control.getChildrenSequenceList(seq_list, max_children_size, menu_index);
+for (int i = 0; i < _childrens_count; ++i) {
+  _item_array[i] = menu_control.getItemBySequance(seq_list[i]);
+}
+*/
   }
 
   void update(ui_base_t* ui, draw_param_t *param, int offset_x, int offset_y) override

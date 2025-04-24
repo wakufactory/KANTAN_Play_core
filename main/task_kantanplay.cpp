@@ -205,8 +205,13 @@ void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& com
       case def::play::arpeggio_style_t::mute:
         mute = true;
         // ミュート処理は同時発音ではなく高速ダウンストロークとして扱う
-        autorelease_usec = 1000 * 20;
-        displacement_usec >>= 2; // TODO:値の調整。暫定で遅延発音の間隔を指定の 1/4 としている。
+
+        // ミュート処理の時はリリースまでの時間はストロークスピードの 2倍とする
+        autorelease_usec = displacement_usec * 2;
+
+        // ミュート処理の時はストロークスピードは 1/4 とする。
+        displacement_usec >>= 2;
+
         pitch_flow = -1;
         pitch_index = def::app::max_pitch_with_drum - 1;
         pitch_last = -1;
@@ -399,15 +404,15 @@ void task_kantanplay_t::chordStep(bool on_beat)
 
     // オンコード用のベースDegreeが変更になった時は先頭に戻すリクエストフラグを立てる(強制ではない)
     int base_degree = system_registry.chord_play.getChordBaseDegree();
-    if (_base_degree != base_degree) {
-      _base_degree = base_degree;
+    if (_bass_degree != base_degree) {
+      _bass_degree = base_degree;
       reset_request = true;
     }
 
     // オンコード用のベースSemitoneが変更になった時は先頭に戻すリクエストフラグを立てる(強制ではない)
     int base_semitone = system_registry.chord_play.getChordBaseSemitone();
-    if (_base_semitone != base_semitone) {
-      _base_semitone = base_semitone;
+    if (_bass_semitone != base_semitone) {
+      _bass_semitone = base_semitone;
       reset_request = true;
     }
 
@@ -712,8 +717,8 @@ void task_kantanplay_t::chordPlay(bool on_beat)
   options.minor_swap = system_registry.chord_play.getChordMinorSwap();
   options.semitone_shift = system_registry.chord_play.getChordSemitone();
   options.modifier = system_registry.chord_play.getChordModifier();
-  options.bass_degree = _base_degree;
-  options.bass_semitone_shift = _base_semitone;
+  options.bass_degree = _bass_degree;
+  options.bass_semitone_shift = _bass_semitone;
 
 // M5_LOGE("key: %d, minor_swap: %d, modifier: %d, semitone: %d", key, minor_swap, (int)modifier, semitone);
   for (int part = 0; part < def::app::max_chord_part; ++part) {
@@ -766,8 +771,12 @@ void task_kantanplay_t::chordPlay(bool on_beat)
       case def::play::arpeggio_style_t::mute:
         mute = true;
         // ミュート処理は同時発音ではなく高速ダウンストロークとして扱う
-        autorelease_usec = 1000 * 20;
-        displacement_usec >>= 2; // TODO:値の調整。暫定で遅延発音の間隔を指定の 1/4 としている。
+
+        // ミュート処理の時はリリースまでの時間はストロークスピードの 2倍とする
+        autorelease_usec = displacement_usec * 2;
+
+        // ミュート処理の時はストロークスピードは 1/4 とする。
+        displacement_usec >>= 2;
         pitch_flow = -1;
         pitch_index = def::app::max_pitch_with_drum - 1;
         pitch_last = -1;

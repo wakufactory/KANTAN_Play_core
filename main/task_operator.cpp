@@ -231,12 +231,12 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
     }
     break;
 
-  case def::command::main_button:
+  case def::command::internal_button:
     {
       uint8_t button_index = param - 1;
       def::command::command_param_array_t pair = system_registry.command_mapping_current.getCommandParamArray(button_index);
       for (auto &cp : pair.array) {
-        if (cp.command == def::command::none || cp.command == def::command::sub_button) { continue; }
+        if (cp.command == def::command::none) { continue; }
         // 変更したコマンドで再入する
         commandProccessor(cp, is_pressed);
       }
@@ -303,11 +303,11 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
     procChordSemitone(command_param, is_pressed);
     break;
 
-  case def::command::chord_base_degree:
+  case def::command::chord_bass_degree:
     procChordBaseDegree(command_param, is_pressed);
     break;
 
-  case def::command::chord_base_semitone:
+  case def::command::chord_bass_semitone:
     procChordBaseSemitone(command_param, is_pressed);
     break;
 
@@ -912,7 +912,7 @@ void task_operator_t::procChordMinorSwap(const def::command::command_param_t& co
 {
   system_registry.chord_play.setChordMinorSwap(is_pressed);
   // メジャー・マイナースワップボタンを押したタイミングでコード演奏のアルペジオパターン先頭にステップを戻す
-  system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+  // system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
 }
 
 void task_operator_t::procChordSemitone(const def::command::command_param_t& command_param, const bool is_pressed)
@@ -922,12 +922,12 @@ void task_operator_t::procChordSemitone(const def::command::command_param_t& com
   if (system_registry.working_command.check( { def::command::chord_semitone, 2 } )) { ++value; }
   system_registry.chord_play.setChordSemitone(value);
   // 半音変更ボタンを操作したタイミングでコード演奏のアルペジオパターン先頭にステップを戻す
-  system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+  // system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
 }
 
 void task_operator_t::procChordBaseDegree(const def::command::command_param_t& command_param, const bool is_pressed)
 {
-  // M5_LOGV("chord_base_degree %d %d", command_param.getParam(), is_pressed);
+  // M5_LOGV("chord_bass_degree %d %d", command_param.getParam(), is_pressed);
   // TODO: 暫定実装。
   // Modifierボタンと同じように、同時押しされた場合には最後に押されたボタンの値を優先し、
   // 離された時点でも別のボタンが押されていればそちらに変更するなどの処理が必要になる。
@@ -949,10 +949,10 @@ void task_operator_t::procChordBaseDegree(const def::command::command_param_t& c
 
 void task_operator_t::procChordBaseSemitone(const def::command::command_param_t& command_param, const bool is_pressed)
 {
-  // M5_LOGV("chord_base_semitone %d %d", command_param.getParam(), is_pressed);
+  // M5_LOGV("chord_bass_semitone %d %d", command_param.getParam(), is_pressed);
   int value = 0;
-  if (system_registry.working_command.check( { def::command::chord_base_semitone, 1 } )) { --value; }
-  if (system_registry.working_command.check( { def::command::chord_base_semitone, 2 } )) { ++value; }
+  if (system_registry.working_command.check( { def::command::chord_bass_semitone, 1 } )) { --value; }
+  if (system_registry.working_command.check( { def::command::chord_bass_semitone, 2 } )) { ++value; }
   system_registry.chord_play.setChordBaseSemitone(value);
 }
 

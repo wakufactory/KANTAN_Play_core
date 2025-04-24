@@ -207,18 +207,18 @@ void system_registry_t::reset(void)
     { 53, { def::command::chord_modifier  , KANTANMusic_Modifier_dim } },
     { 55, { def::command::chord_modifier  , KANTANMusic_Modifier_7 } },
     { 56, { def::command::chord_modifier  , KANTANMusic_Modifier_sus4 } },
-    { 57, { def::command::chord_minor_swap, 0 } },
+    { 57, { def::command::chord_minor_swap, 1 } },
     { 58, { def::command::chord_modifier  , KANTANMusic_Modifier_Add9 } },
     { 59, { def::command::chord_modifier  , KANTANMusic_Modifier_M7 } },
     { 60, {                                  def::command::chord_degree, 1 } },
-    { 61, { def::command::chord_semitone, 2, def::command::chord_degree, 1 } },
+    { 61, { def::command::chord_semitone, 1, def::command::chord_degree, 2 } },
     { 62, {                                  def::command::chord_degree, 2 } },
     { 63, { def::command::chord_semitone, 1, def::command::chord_degree, 3 } },
     { 64, {                                  def::command::chord_degree, 3 } },
     { 65, {                                  def::command::chord_degree, 4 } },
-    { 66, { def::command::chord_semitone, 2, def::command::chord_degree, 4 } },
+    { 66, { def::command::chord_semitone, 1, def::command::chord_degree, 5 } },
     { 67, {                                  def::command::chord_degree, 5 } },
-    { 68, { def::command::chord_semitone, 2, def::command::chord_degree, 5 } },
+    { 68, { def::command::chord_semitone, 1, def::command::chord_degree, 6 } },
     { 69, {                                  def::command::chord_degree, 6 } },
     { 70, { def::command::chord_semitone, 1, def::command::chord_degree, 7 } },
     { 71, {                                  def::command::chord_degree, 7 } },
@@ -385,48 +385,75 @@ void system_registry_t::reg_user_setting_t::setTimeZone15min(int8_t offset)
 }
 
 //-------------------------------------------------------------------------
-struct command_name_t {
-  def::command::command_param_array_t command;
-  const char* name;
-};
-static constexpr const command_name_t command_name[] = {
-  { { def::command::chord_modifier, KANTANMusic_Modifier_dim },  "dim"   },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_m7_5 }, "m7_5"  },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_sus4 }, "sus4"  },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_6 },    "6"     },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_7 },    "7"     },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_Add9 }, "Add9"  },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_M7 },   "M7"    },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_aug },  "aug"   },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_7sus4 },"7sus4" },
-  { { def::command::chord_modifier, KANTANMusic_Modifier_dim7 }, "dim7"  },
-  { { def::command::chord_minor_swap, 1 },                       "swap"  },
-  { { def::command::chord_semitone, 1 },                         "flat"  },
-  { { def::command::chord_semitone, 2 },                         "sharp" },
-};
+namespace def::ctrl_assign {
+  int get_index_from_command(const command_name_t* data, const def::command::command_param_array_t& command)
+  {
+    for (int i = 0; data[i].jsonname != nullptr; i++) {
+      if (data[i].command == command) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  int get_index_from_jsonname(const command_name_t* data, const char* name)
+  {
+    for (int i = 0; data[i].jsonname != nullptr; i++) {
+      if (strcmp(data[i].jsonname, name) == 0) {
+        return i;
+      }
+    }
+    return -1;
+  }
+}
+
+const char* localize_text_t::get(void) const
+{ auto i = (uint8_t)system_registry.user_setting.getLanguage(); return text[i] ? text[i] : text[0]; }
+
+
+// struct command_name_t {
+//   const char* name;
+//   def::command::command_param_array_t command;
+// };
+// static constexpr const command_name_t command_name[] = {
+//   { "dim"   , { def::command::chord_modifier   , KANTANMusic_Modifier_dim }   },
+//   { "m7_5"  , { def::command::chord_modifier   , KANTANMusic_Modifier_m7_5 }  },
+//   { "sus4"  , { def::command::chord_modifier   , KANTANMusic_Modifier_sus4 }  },
+//   { "6"     , { def::command::chord_modifier   , KANTANMusic_Modifier_6 }     },
+//   { "7"     , { def::command::chord_modifier   , KANTANMusic_Modifier_7 }     },
+//   { "Add9"  , { def::command::chord_modifier   , KANTANMusic_Modifier_Add9 }  },
+//   { "M7"    , { def::command::chord_modifier   , KANTANMusic_Modifier_M7 }    },
+//   { "aug"   , { def::command::chord_modifier   , KANTANMusic_Modifier_aug }   },
+//   { "7sus4" , { def::command::chord_modifier   , KANTANMusic_Modifier_7sus4 } },
+//   { "dim7"  , { def::command::chord_modifier   , KANTANMusic_Modifier_dim7 }  },
+//   { "swap"  , { def::command::chord_minor_swap , 1 }                          },
+//   { "flat"  , { def::command::chord_semitone   , 1 }                          },
+//   { "sharp" , { def::command::chord_semitone   , 2 }                          },
+// };
+
+// static const char* get_name_from_command(const def::command::command_param_array_t& command)
+// {
+//   for (const auto& c : command_name) {
+//     if (c.command == command) {
+//       return c.name;
+//     }
+//   }
+//   return nullptr;
+// }
+
+// static const def::command::command_param_array_t get_command_from_name(const char* name)
+// {
+//   for (const auto& c : command_name) {
+//     if (strcmp(c.name, name) == 0) {
+//       return c.command;
+//     }
+//   }
+//   return { def::command::none };
+// }
+
 static constexpr const uint8_t key_mapping_index[] = { 
   4,  5,  9, 10, 12, 13, 14, 15,
 };
-
-static const char* get_name_from_command(const def::command::command_param_array_t& command)
-{
-  for (const auto& c : command_name) {
-    if (c.command == command) {
-      return c.name;
-    }
-  }
-  return nullptr;
-}
-
-static const def::command::command_param_array_t get_command_from_name(const char* name)
-{
-  for (const auto& c : command_name) {
-    if (strcmp(c.name, name) == 0) {
-      return c.command;
-    }
-  }
-  return { def::command::none };
-}
 
 //-------------------------------------------------------------------------
 size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
@@ -455,13 +482,22 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
   }
   auto json_key_mapping = json_root["key_mapping"].to<JsonObject>();
   {
-    auto json = json_key_mapping["chord_play"].to<JsonObject>();
-    for (auto index : key_mapping_index) {
-      auto cmd = command_mapping_custom_main.getCommandParamArray(index - 1);
-      auto name = get_name_from_command(cmd);
-      if (name != nullptr) {
-// M5_LOGV("key_mapping %d: %s", index, name);
-        json[std::to_string(index)] = name;
+    {
+      auto json = json_key_mapping["chord_play"].to<JsonObject>();
+      for (auto btn : key_mapping_index) {
+        auto cmd = command_mapping_custom_main.getCommandParamArray(btn - 1);
+        auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::command_name, cmd);
+        if (index < 0) continue;
+        json[std::to_string(btn)] = def::ctrl_assign::command_name[index].jsonname;
+      }
+    }
+    {
+      auto json = json_key_mapping["external"].to<JsonObject>();
+      for (int btn = 1; btn <= def::hw::max_button_mask; ++btn) {
+        auto cmd = command_mapping_external.getCommandParamArray(btn - 1);
+        auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::external_table, cmd);
+        if (index < 0) continue;
+        json[std::to_string(btn)] = def::ctrl_assign::external_table[index].jsonname;
       }
     }
   }
@@ -512,18 +548,40 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
     user_setting.setChatteringThreshold(            json["chattering_threshold"].as<uint8_t>());
     user_setting.setTimeZone(                       json["timezone"].as<int8_t>());
   }
-  auto json_key_mapping = json_root["key_mapping"].as<JsonObject>();
-  if (!json_key_mapping.isNull())
+
+  // control_assignment::play button ( 旧名 key mapping )
   {
-    auto json = json_key_mapping["chord_play"].as<JsonObject>();
-    if (!json.isNull()) {
-      for (auto index : key_mapping_index) {
-        auto name = json[std::to_string(index)].as<const char*>();
-        if (name != nullptr) {
-// M5_LOGV("key_mapping %d: %s", index, name);
-          auto cmd = get_command_from_name(name);
-          if (cmd.array[0].command != def::command::none) {
-            command_mapping_custom_main.setCommandParamArray(index - 1, cmd);
+    auto json_key_mapping = json_root["key_mapping"].as<JsonObject>();
+    if (!json_key_mapping.isNull())
+    {
+      {
+        auto json = json_key_mapping["chord_play"].as<JsonObject>();
+        if (!json.isNull()) {
+          for (auto btn : key_mapping_index) {
+            auto name = json[std::to_string(btn)].as<const char*>();
+            if (name == nullptr) continue;
+            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::command_name, name);
+            if (index < 0) continue;
+            command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::command_name[index].command);
+          }
+        }
+      }
+      {
+        auto json = json_key_mapping["external"].as<JsonObject>();
+        if (!json.isNull()) {
+          for (auto btn : key_mapping_index) {
+            auto name = json[std::to_string(btn)].as<const char*>();
+            if (name == nullptr) continue;
+            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::command_name, name);
+            if (index < 0) continue;
+            command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::command_name[index].command);
+          }
+          for (int btn = 1; btn <= def::hw::max_button_mask; ++btn) {
+            auto name = json[std::to_string(btn)].as<const char*>();
+            if (name == nullptr) continue;
+            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::external_table, name);
+            if (index < 0) continue;
+            command_mapping_external.setCommandParamArray(btn - 1, def::ctrl_assign::external_table[index].command);
           }
         }
       }

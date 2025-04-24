@@ -42,24 +42,6 @@ enum class menu_item_type_t : uint8_t {
 */
 };
 
-class localize_text_t : public text_t {
-  const char* text[(uint8_t)def::lang::language_t::max_language] = { nullptr, };
-public:
-  const char* get(void) const override { auto i = (uint8_t)system_registry.user_setting.getLanguage(); return text[i] ? text[i] : text[0]; }
-//  const char* get(def::lang::language_t index) const { auto i = (uint8_t)index; return text[i] ? text[i] : text[0]; }
-  constexpr localize_text_t(const char* en_ = nullptr, const char* ja_ = nullptr) : text { en_, ja_ } {}
-};
-
-class localize_text_array_t : public text_array_t {
-  const localize_text_t* _text_array;
-  size_t _size;
-public:
-  const text_t* at(size_t index) const override { return &_text_array[index]; }
-  size_t size(void) const override { return _size; }
-  constexpr localize_text_array_t(size_t size, const localize_text_t* text_array) : _text_array { text_array }, _size { size } {}
-};
-
-
 struct value_rule_t {
   int minimum;
   int maximum;
@@ -136,7 +118,9 @@ struct menu_control_t {
 
   menu_item_ptr getItemByLevel(uint8_t level) { return _menu_array[level ? system_registry.menu_status.getSelectIndex(level-1):0]; }
 
-  size_t getChildrenSequenceList(uint8_t* result_array, size_t size, uint8_t parent_seq);
+  // size_t getChildrenSequenceList(uint8_t* result_array, size_t size, uint8_t parent_seq);
+  int getChildrenSequenceList(std::vector<uint16_t>* index_list, uint8_t parent_index);
+
   menu_item_ptr getItemBySequance(uint8_t sequence_number) { return _menu_array[sequence_number]; }
 
 protected:

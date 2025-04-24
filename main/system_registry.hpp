@@ -979,25 +979,32 @@ protected:
         reg_menu_status_t(void) : registry_t(16, 0, DATA_SIZE_8) {}
         enum index_t : uint16_t {
           CURRENT_LEVEL,
-          CURRENT_SEQUENCE,
           MENU_CATEGORY,
-          SELECT_INDEX_LEVEL_0,
-          SELECT_INDEX_LEVEL_1,
-          SELECT_INDEX_LEVEL_2,
-          SELECT_INDEX_LEVEL_3,
+          CURRENT_SEQUENCE_L,
+          CURRENT_SEQUENCE_H,
+          SELECT_INDEX_LEVEL_0L,
+          SELECT_INDEX_LEVEL_0H,
+          SELECT_INDEX_LEVEL_1L,
+          SELECT_INDEX_LEVEL_1H,
+          SELECT_INDEX_LEVEL_2L,
+          SELECT_INDEX_LEVEL_2H,
+          SELECT_INDEX_LEVEL_3L,
+          SELECT_INDEX_LEVEL_3H,
+          SELECT_INDEX_LEVEL_4L,
+          SELECT_INDEX_LEVEL_4H,
         };
         void reset(void) { for (int i = 0; i < 16; ++i) { set8(i, 0); } }
         void setCurrentLevel(uint8_t level) { set8(CURRENT_LEVEL, level); }
         uint8_t getCurrentLevel(void) const { return get8(CURRENT_LEVEL); }
-        void setCurrentSequence(uint8_t seq) { set8(CURRENT_SEQUENCE, seq); }
-        uint8_t getCurrentSequence(void) const { return get8(CURRENT_SEQUENCE); }
+        void setCurrentSequence(uint16_t seq) { set16(CURRENT_SEQUENCE_L, seq); }
+        uint16_t getCurrentSequence(void) const { return get16(CURRENT_SEQUENCE_L); }
         void setMenuCategory(uint8_t index) {
             assert(index < 8 && "Menu category index is out of range.");
             set8(MENU_CATEGORY, index);
         }
         uint8_t getMenuCategory(void) const { return get8(MENU_CATEGORY); }
-        void setSelectIndex(uint8_t level, uint8_t index) { set8(SELECT_INDEX_LEVEL_0 + level, index); }
-        uint8_t getSelectIndex(uint8_t level) const { return get8(SELECT_INDEX_LEVEL_0 + level); }
+        void setSelectIndex(uint8_t level, uint16_t index) { set16(SELECT_INDEX_LEVEL_0L + level*2, index); }
+        uint16_t getSelectIndex(uint8_t level) const { return get16(SELECT_INDEX_LEVEL_0L + level*2); }
     }; 
 
     reg_menu_status_t      menu_status;

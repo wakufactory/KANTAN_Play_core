@@ -221,9 +221,9 @@ static void response_ctrl(AsyncWebServerRequest *request) {
   };
   using namespace def::command;
   static constexpr const btnctrl_t btnctrl_table[] = {
-    {{main_button,11}, "qQ7"}, {{main_button,12}, "wW8"}, {{main_button,13}, "eE9"}, {{main_button,14}, "rR" }, {{main_button,15}, "tT"},
-    {{main_button, 6}, "aA4"}, {{main_button, 7}, "sS5"}, {{main_button, 8}, "dD6"}, {{main_button, 9}, "fF" }, {{main_button,10}, "gG"},
-    {{main_button, 1}, "zZ1"}, {{main_button, 2}, "xX2"}, {{main_button, 3}, "cC3"}, {{main_button, 4}, "vV0"}, {{main_button, 5}, "bB"},
+    {{internal_button,11}, "qQ7"}, {{internal_button,12}, "wW8"}, {{internal_button,13}, "eE9"}, {{internal_button,14}, "rR" }, {{internal_button,15}, "tT"},
+    {{internal_button, 6}, "aA4"}, {{internal_button, 7}, "sS5"}, {{internal_button, 8}, "dD6"}, {{internal_button, 9}, "fF" }, {{internal_button,10}, "gG"},
+    {{internal_button, 1}, "zZ1"}, {{internal_button, 2}, "xX2"}, {{internal_button, 3}, "cC3"}, {{internal_button, 4}, "vV0"}, {{internal_button, 5}, "bB"},
   };
 
   String res = 
@@ -485,9 +485,9 @@ static esp_err_t response_ctrl_handler(httpd_req_t *req)
   };
   using namespace def::command;
   static constexpr const btnctrl_t btnctrl_table[] = {
-    {{main_button,11}, "qQ7"}, {{main_button,12}, "wW8"}, {{main_button,13}, "eE9"}, {{main_button,14}, "rR" }, {{main_button,15}, "tT"},
-    {{main_button, 6}, "aA4"}, {{main_button, 7}, "sS5"}, {{main_button, 8}, "dD6"}, {{main_button, 9}, "fF" }, {{main_button,10}, "gG"},
-    {{main_button, 1}, "zZ1"}, {{main_button, 2}, "xX2"}, {{main_button, 3}, "cC3"}, {{main_button, 4}, "vV0"}, {{main_button, 5}, "bB"},
+    {{internal_button,11}, "qQ7"}, {{internal_button,12}, "wW8"}, {{internal_button,13}, "eE9"}, {{internal_button,14}, "rR" }, {{internal_button,15}, "tT"},
+    {{internal_button, 6}, "aA4"}, {{internal_button, 7}, "sS5"}, {{internal_button, 8}, "dD6"}, {{internal_button, 9}, "fF" }, {{internal_button,10}, "gG"},
+    {{internal_button, 1}, "zZ1"}, {{internal_button, 2}, "xX2"}, {{internal_button, 3}, "cC3"}, {{internal_button, 4}, "vV0"}, {{internal_button, 5}, "bB"},
   };
 
   httpd_resp_sendstr_chunk(req, 
