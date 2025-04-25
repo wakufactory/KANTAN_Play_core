@@ -402,6 +402,15 @@ void task_kantanplay_t::chordStep(bool on_beat)
       reset_request = true;
     }
 
+    // マイナースワップや半音上げ下げが変更になった場合は先頭に戻すリクエストフラグを立てる(強制ではない)
+    int minor_swap = system_registry.chord_play.getChordMinorSwap();
+    int semitone = system_registry.chord_play.getChordSemitone();
+    if (_minor_swap != minor_swap || _semitone != semitone) {
+      _minor_swap = minor_swap;
+      _semitone = semitone;
+      reset_request = true;
+    }
+
     // オンコード用のベースDegreeが変更になった時は先頭に戻すリクエストフラグを立てる(強制ではない)
     int base_degree = system_registry.chord_play.getChordBaseDegree();
     if (_bass_degree != base_degree) {

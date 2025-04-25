@@ -61,7 +61,7 @@ public:
           uint8_t channel = message.channel;
           if ((channel == 0) && ((message.type & ~1) == 0x08)) {
             uint8_t note = message.data[0];
-            auto command_param_array = system_registry.command_mapping_midi.getCommandParamArray(note);
+            auto command_param_array = system_registry.command_mapping_midinote.getCommandParamArray(note);
             if (!command_param_array.empty()) {
               uint8_t velocity = (message.type == 0x09) // NoteOn
                                ? message.data[1]

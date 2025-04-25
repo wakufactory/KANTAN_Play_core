@@ -99,7 +99,7 @@ void system_registry_t::init(void)
   external_input.init();
   command_mapping_current.init();
   command_mapping_external.init();
-  command_mapping_midi.init();
+  command_mapping_midinote.init();
   drum_mapping.init();
   file_command.init();
 
@@ -123,7 +123,7 @@ void system_registry_t::init(void)
 // ※ 240MHzは使用しない。240MHzへの動的変更は電圧設定など必要な制御が増えるため。
   rtc_clk_cpu_freq_mhz_to_config(160, &conf_160mhz);
   rtc_clk_cpu_freq_mhz_to_config(80, &conf_80mhz);
-  rtc_clk_cpu_freq_set_config_fast(&conf_80mhz);
+  rtc_clk_cpu_freq_set_config_fast(&conf_160mhz);
 #if defined (DEBUG_GPIO_MONITORING)
   pin_debug[0] = M5.getPin(m5::pin_name_t::port_a_pin2);
   pin_debug[1] = M5.getPin(m5::pin_name_t::port_a_pin1);
@@ -192,13 +192,16 @@ void system_registry_t::reset(void)
   operator_command.addQueue( { def::command::set_velocity, 127 } );
 
   // ボタンマッピング設定
-  for (int i = 0; i < def::hw::max_button_mask; ++i) {
-    command_mapping_external.setCommandParamArray(i, def::command::command_mapping_external_table[i]);
-  }
   for (int i = 0; i < def::app::max_chord_part; ++i) {
     chord_play.setPartNextEnable(i, true);
   }
 
+  command_mapping_external.reset();
+  for (int i = 0; i < def::hw::max_button_mask; ++i) {
+    command_mapping_external.setCommandParamArray(i, def::command::command_mapping_external_table[i]);
+  }
+
+  command_mapping_midinote.reset();
   struct note_cp_t {
     uint8_t note;
     def::command::command_param_array_t command_param;
@@ -224,7 +227,7 @@ void system_registry_t::reset(void)
     { 71, {                                  def::command::chord_degree, 7 } },
   };
   for (const auto& cp : note_cp_table) {
-    command_mapping_midi.setCommandParamArray(cp.note, cp.command_param);
+    command_mapping_midinote.setCommandParamArray(cp.note, cp.command_param);
   }
 
   // コード演奏時のメインボタンのカスタマイズ用マッピングを準備
@@ -386,7 +389,7 @@ void system_registry_t::reg_user_setting_t::setTimeZone15min(int8_t offset)
 
 //-------------------------------------------------------------------------
 namespace def::ctrl_assign {
-  int get_index_from_command(const command_name_t* data, const def::command::command_param_array_t& command)
+  int get_index_from_command(const control_assignment_t* data, const def::command::command_param_array_t& command)
   {
     for (int i = 0; data[i].jsonname != nullptr; i++) {
       if (data[i].command == command) {
@@ -396,7 +399,7 @@ namespace def::ctrl_assign {
     return -1;
   }
 
-  int get_index_from_jsonname(const command_name_t* data, const char* name)
+  int get_index_from_jsonname(const control_assignment_t* data, const char* name)
   {
     for (int i = 0; data[i].jsonname != nullptr; i++) {
       if (strcmp(data[i].jsonname, name) == 0) {
@@ -409,47 +412,6 @@ namespace def::ctrl_assign {
 
 const char* localize_text_t::get(void) const
 { auto i = (uint8_t)system_registry.user_setting.getLanguage(); return text[i] ? text[i] : text[0]; }
-
-
-// struct command_name_t {
-//   const char* name;
-//   def::command::command_param_array_t command;
-// };
-// static constexpr const command_name_t command_name[] = {
-//   { "dim"   , { def::command::chord_modifier   , KANTANMusic_Modifier_dim }   },
-//   { "m7_5"  , { def::command::chord_modifier   , KANTANMusic_Modifier_m7_5 }  },
-//   { "sus4"  , { def::command::chord_modifier   , KANTANMusic_Modifier_sus4 }  },
-//   { "6"     , { def::command::chord_modifier   , KANTANMusic_Modifier_6 }     },
-//   { "7"     , { def::command::chord_modifier   , KANTANMusic_Modifier_7 }     },
-//   { "Add9"  , { def::command::chord_modifier   , KANTANMusic_Modifier_Add9 }  },
-//   { "M7"    , { def::command::chord_modifier   , KANTANMusic_Modifier_M7 }    },
-//   { "aug"   , { def::command::chord_modifier   , KANTANMusic_Modifier_aug }   },
-//   { "7sus4" , { def::command::chord_modifier   , KANTANMusic_Modifier_7sus4 } },
-//   { "dim7"  , { def::command::chord_modifier   , KANTANMusic_Modifier_dim7 }  },
-//   { "swap"  , { def::command::chord_minor_swap , 1 }                          },
-//   { "flat"  , { def::command::chord_semitone   , 1 }                          },
-//   { "sharp" , { def::command::chord_semitone   , 2 }                          },
-// };
-
-// static const char* get_name_from_command(const def::command::command_param_array_t& command)
-// {
-//   for (const auto& c : command_name) {
-//     if (c.command == command) {
-//       return c.name;
-//     }
-//   }
-//   return nullptr;
-// }
-
-// static const def::command::command_param_array_t get_command_from_name(const char* name)
-// {
-//   for (const auto& c : command_name) {
-//     if (strcmp(c.name, name) == 0) {
-//       return c.command;
-//     }
-//   }
-//   return { def::command::none };
-// }
 
 static constexpr const uint8_t key_mapping_index[] = { 
   4,  5,  9, 10, 12, 13, 14, 15,
@@ -486,15 +448,26 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
       auto json = json_key_mapping["chord_play"].to<JsonObject>();
       for (auto btn : key_mapping_index) {
         auto cmd = command_mapping_custom_main.getCommandParamArray(btn - 1);
-        auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::command_name, cmd);
+        auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::playbutton_table, cmd);
         if (index < 0) continue;
-        json[std::to_string(btn)] = def::ctrl_assign::command_name[index].jsonname;
+        json[std::to_string(btn)] = def::ctrl_assign::playbutton_table[index].jsonname;
       }
     }
     {
       auto json = json_key_mapping["external"].to<JsonObject>();
       for (int btn = 1; btn <= def::hw::max_button_mask; ++btn) {
         auto cmd = command_mapping_external.getCommandParamArray(btn - 1);
+        if (cmd.empty()) { continue; }
+        auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::external_table, cmd);
+        if (index < 0) continue;
+        json[std::to_string(btn)] = def::ctrl_assign::external_table[index].jsonname;
+      }
+    }
+    {
+      auto json = json_key_mapping["midinote"].to<JsonObject>();
+      for (int btn = 1; btn <= def::midi::max_note; ++btn) {
+        auto cmd = command_mapping_midinote.getCommandParamArray(btn - 1);
+        if (cmd.empty()) { continue; }
         auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::external_table, cmd);
         if (index < 0) continue;
         json[std::to_string(btn)] = def::ctrl_assign::external_table[index].jsonname;
@@ -560,28 +533,35 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
           for (auto btn : key_mapping_index) {
             auto name = json[std::to_string(btn)].as<const char*>();
             if (name == nullptr) continue;
-            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::command_name, name);
+            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::playbutton_table, name);
             if (index < 0) continue;
-            command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::command_name[index].command);
+            command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::playbutton_table[index].command);
           }
         }
       }
       {
         auto json = json_key_mapping["external"].as<JsonObject>();
         if (!json.isNull()) {
-          for (auto btn : key_mapping_index) {
-            auto name = json[std::to_string(btn)].as<const char*>();
-            if (name == nullptr) continue;
-            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::command_name, name);
-            if (index < 0) continue;
-            command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::command_name[index].command);
-          }
+          command_mapping_external.reset();
           for (int btn = 1; btn <= def::hw::max_button_mask; ++btn) {
             auto name = json[std::to_string(btn)].as<const char*>();
             if (name == nullptr) continue;
             auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::external_table, name);
             if (index < 0) continue;
             command_mapping_external.setCommandParamArray(btn - 1, def::ctrl_assign::external_table[index].command);
+          }
+        }
+      }
+      {
+        auto json = json_key_mapping["midinote"].as<JsonObject>();
+        if (!json.isNull()) {
+          command_mapping_midinote.reset();
+          for (int btn = 1; btn <= def::midi::max_note; ++btn) {
+            auto name = json[std::to_string(btn)].as<const char*>();
+            if (name == nullptr) continue;
+            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::external_table, name);
+            if (index < 0) continue;
+            command_mapping_midinote.setCommandParamArray(btn - 1, def::ctrl_assign::external_table[index].command);
           }
         }
       }

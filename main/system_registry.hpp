@@ -374,12 +374,9 @@ protected:
         reg_external_input_t(void) : registry_t(16, 16, DATA_SIZE_32) {}
         enum index_t : uint16_t {
             BUTTON_BITMASK = 0x00,
-            BITMASK_BYTEBUTTON = 0x00,
-            BITMASK_EXTIO2 = 0x01,
         };
-        void setByteButtonBitmask(uint8_t bitmask) { set8(BITMASK_BYTEBUTTON, bitmask); }
-        void setExtIo2Bitmask(uint8_t bitmask) { set8(BITMASK_EXTIO2, bitmask); }
-        uint32_t getButtonBitmask(void) const { return get32(0); }
+        void setButtonBitmask(uint32_t bitmask) { set32(BUTTON_BITMASK, bitmask); }
+        uint32_t getButtonBitmask(void) const { return get32(BUTTON_BITMASK); }
     };
 
     struct reg_internal_imu_t : public registry_t {
@@ -883,12 +880,20 @@ protected:
         reg_command_mapping_t(uint8_t button_count) : registry_t(button_count * 8, 0, DATA_SIZE_32) {}
         void setCommandParamArray(uint8_t button_index, def::command::command_param_array_t command) { set32(button_index * 8, command.raw32_0); set32(button_index * 8 + 4, command.raw32_1); }
         def::command::command_param_array_t getCommandParamArray(uint8_t button_index) const { return def::command::command_param_array_t { get32(button_index * 8), get32(button_index * 8 + 4) }; }
+        void reset(void) {
+            for (int i = 0; i < _registry_size; i += 4) {
+                set32(i, 0);
+            }
+        }
     };
 
     struct reg_midi_command_mapping_t : public registry_map_t<def::command::command_param_array_t> {
         reg_midi_command_mapping_t(void) : registry_map_t<def::command::command_param_array_t>( def::command::command_param_array_t(0) ) {}
         void setCommandParamArray(uint8_t button_index, def::command::command_param_array_t command) { set(button_index, command); }
         const def::command::command_param_array_t& getCommandParamArray(uint8_t button_index) const { return get(button_index); }
+        void reset(void) {
+            _data.clear();
+        }
     };
 
 /*
@@ -1035,7 +1040,7 @@ protected:
 
     reg_command_mapping_t command_mapping_current { def::hw::max_button_mask };      // 現在のボタンマッピングテーブル
     reg_command_mapping_t command_mapping_external { def::hw::max_button_mask };     // 外部機器ボタンのマッピングテーブル
-    reg_midi_command_mapping_t command_mapping_midi;    // MIDIコマンドマッピングテーブル
+    reg_midi_command_mapping_t command_mapping_midinote;    // MIDIコマンドマッピングテーブル
 
     reg_command_mapping_t command_mapping_custom_main { def::hw::max_button_mask };  // メインボタンの割当カスタマイズテーブル
 

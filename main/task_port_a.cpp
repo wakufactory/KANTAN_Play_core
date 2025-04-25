@@ -10,9 +10,18 @@
 
 namespace kanplay_ns {
 //-------------------------------------------------------------------------
+// 最大 4台、アドレスは デフォルトを基準に 4単位で上のアドレスを使用
+static external_m5extio2_t     external_m5extio2[4]     = { { 0x45 }, { 0x49 }, { 0x4D }, { 0x51 } };  // default addr :0x45
+static external_m5bytebutton_t external_m5bytebutton[4] = { { 0x47 }, { 0x4B }, { 0x4F }, { 0x53 } };  // default addr :0x47
 
-external_m5bytebutton_t external_m5bytebutton;
-external_m5extio2_t external_m5extio2;
+static interface_external_t** groups[] =
+{ (interface_external_t*[]){ &external_m5extio2[0], &external_m5bytebutton[0], nullptr },
+  (interface_external_t*[]){ &external_m5extio2[1], &external_m5bytebutton[1], nullptr },
+  (interface_external_t*[]){ &external_m5extio2[2], &external_m5bytebutton[2], nullptr },
+  (interface_external_t*[]){ &external_m5extio2[3], &external_m5bytebutton[3], nullptr }
+};
+
+static constexpr size_t groups_number = sizeof(groups) / sizeof(groups[0]);
 
 bool task_port_a_t::start(void)
 {
@@ -26,47 +35,32 @@ bool task_port_a_t::start(void)
 
 void task_port_a_t::task_func(task_port_a_t* me)
 {
-  uint8_t loop_counter = 0;
-  bool exist_bytebutton = false;
-  bool exist_extio2 = false;
-  uint8_t step = 0;
+  uint8_t loop_counter = 0xFF;
 
   for (;;) {
-    M5.delay(2);
-    if (++step == 2) {
-      step = 0;
-      ++loop_counter;
-    }
-    switch (step) {
-    default: break;
+    ++loop_counter;
+    uint32_t button_state = 0;
+    for (size_t group_index = 0; group_index < groups_number; ++group_index) {
+      vTaskDelay(1);
+      auto device_array = groups[group_index];
 
-    case 0:
-      if (exist_extio2 == false) {
-        if (loop_counter == 0) {
-          exist_extio2 = external_m5extio2.init();
+      uint32_t bitmask = 0;
+      int j = 0;
+      auto device = device_array[0];
+      do {
+        if (!device->exists()) {
+          if (loop_counter == group_index) {
+            device->init();
+          }  
+        } else {
+          if (device->exists()) {
+            device->update(bitmask);
+          }
         }
-      }
-      else
-      {
-        uint32_t button_state = 0;
-        exist_extio2 = external_m5extio2.update(button_state);
-        system_registry.external_input.setExtIo2Bitmask(button_state);
-      }
-      break;
- 
-    case 1:
-      if (exist_bytebutton == false) {
-        if (loop_counter == 0) {
-          exist_bytebutton = external_m5bytebutton.init();
-        }
-      }
-      else
-      {
-        uint32_t button_state = 0;
-        exist_bytebutton = external_m5bytebutton.update(button_state);
-        system_registry.external_input.setByteButtonBitmask(button_state);
-      }
-      break;
+        device = device_array[++j];
+      } while (device != nullptr);
+      button_state |= bitmask << (group_index * 8);
+      system_registry.external_input.set8(system_registry.external_input.BUTTON_BITMASK + group_index, button_state >> (group_index * 8));
     }
   }
 }

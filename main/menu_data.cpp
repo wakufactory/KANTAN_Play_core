@@ -1063,351 +1063,108 @@ protected:
   }
 };
 
-struct mi_modifier_t : public mi_selector_t {
+
+struct mi_ctrl_assign_t : public mi_normal_t {
+  constexpr mi_ctrl_assign_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, const def::ctrl_assign::control_assignment_t table[], size_t size)
+  : mi_normal_t { cate, seq, level, title }
+  , _table { table }
+  , _size { size }
+  {}
+
+  const char* getSelectorText(size_t index) const override { return _table[index].text.get(); }
+  size_t getSelectorCount(void) const override { return _size; }
+
+  const char* getValueText(void) const override
+  {
+    return _table[getValue() - getMinValue()].text.get();
+  }
+
 protected:
-  const uint8_t _button_index;
-  static constexpr const simple_text_array_t name_array = { 14, (const simple_text_t[]){
-    "dim",
-    "m7_5",
-    "sus4",
-    "6",
-    "7",
-    "Add9",
-    "M7",
-    "aug",
-    "7sus4",
-    "dim7",
-    "〜",
-    "♭",
-    "♯",
-    "---",
-  }};
-  static constexpr const def::command::command_param_array_t listitem[] = {
-    { def::command::chord_modifier, KANTANMusic_Modifier_dim },
-    { def::command::chord_modifier, KANTANMusic_Modifier_m7_5 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_sus4 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_6 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_7 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_Add9 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_M7 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_aug },
-    { def::command::chord_modifier, KANTANMusic_Modifier_7sus4 },
-    { def::command::chord_modifier, KANTANMusic_Modifier_dim7 },
-    { def::command::chord_minor_swap, 1 },
-    { def::command::chord_semitone, 1 },
-    { def::command::chord_semitone, 2 },
-    { def::command::none }
-  };
+  const def::ctrl_assign::control_assignment_t* _table;
+  size_t _size;
+};
+
+// control assignment for internal
+struct mi_ca_internal_t : public mi_ctrl_assign_t {
 public:
-  constexpr mi_modifier_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, uint8_t button_index)
-  : mi_selector_t { cate, seq, level, title, &name_array }
+  constexpr mi_ca_internal_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, uint8_t button_index)
+  : mi_ctrl_assign_t { cate, seq, level, title, def::ctrl_assign::playbutton_table, sizeof(def::ctrl_assign::playbutton_table) / sizeof(def::ctrl_assign::playbutton_table[0])-1 }
   , _button_index { button_index } {}
 
   int getValue(void) const override
   {
     auto cmd = system_registry.command_mapping_custom_main.getCommandParamArray(_button_index);
-    int index = 0;
-    for (int i = 0; ; ++i) {
-      auto c = listitem[i];
-      if (c == cmd) {
-        return getMinValue() + i;
-      }
-      if (c.array[0].command == def::command::none) { break; }
+    int index = def::ctrl_assign::get_index_from_command(_table, cmd);
+    if (index < 0) {
+      index = 0;
     }
-    return getMinValue();
+    return getMinValue() + index;
   }
   bool setValue(int value) const override
   {
-    if (mi_selector_t::setValue(value) == false) { return false; }
+    if (mi_ctrl_assign_t::setValue(value) == false) { return false; }
     value -= getMinValue();
-    system_registry.command_mapping_custom_main.setCommandParamArray(_button_index, listitem[value]);
+    system_registry.command_mapping_custom_main.setCommandParamArray(_button_index, _table[value].command);
     return true;
   }
+
+protected:
+  const uint8_t _button_index;
 };
 
-
-struct mi_ext_assign_t : public mi_selector_t {
-  protected:
-    const uint8_t _button_index;
-    static constexpr const localize_text_array_t name_array = { 124, (const localize_text_t[]) {
-      { "Play_Button_01", "プレイボタン01" }, { "Play_Button_02", "プレイボタン02" }, { "Play_Button_03", "プレイボタン03" }, { "Play_Button_04", "プレイボタン04" }, { "Play_Button_05", "プレイボタン05" },
-      { "Play_Button_06", "プレイボタン06" }, { "Play_Button_07", "プレイボタン07" }, { "Play_Button_08", "プレイボタン08" }, { "Play_Button_09", "プレイボタン09" }, { "Play_Button_10", "プレイボタン10" },
-      { "Play_Button_11", "プレイボタン11" }, { "Play_Button_12", "プレイボタン12" }, { "Play_Button_13", "プレイボタン13" }, { "Play_Button_14", "プレイボタン14" }, { "Play_Button_15", "プレイボタン15" },
-      { "Slot_Button_1",  "スロットボタン1" }, { "Slot_Button_2",  "スロットボタン2" }, { "Slot_Button_3",  "スロットボタン3" }, { "Slot_Button_4",  "スロットボタン4" },
-      { "Slot_Button_5",  "スロットボタン5" }, { "Slot_Button_6",  "スロットボタン6" }, { "Slot_Button_7",  "スロットボタン7" }, { "Slot_Button_8",  "スロットボタン8" },
-      { "Side_Button_L",  "左サイドボタン" }, { "Side_Button_R",  "右サイドボタン" },
-      { "Lever_Down",     "シフトレバー下" }, { "Lever_Up",       "シフトレバー上" }, { "Lever_Push",     "シフトレバー押す" },
-      { "Dial_1_Left",    "上ダイヤル左回転" }, { "Dial_1_Right",   "上ダイヤル右回転" }, { "Dial_1_Push",    "上ダイヤル押す" },
-      { "Dial_2_Left",    "下ダイヤル左回転" }, { "Dial_2_Right",   "下ダイヤル右回転" }, { "Dial_2_Push",    "下ダイヤル押す" },
-      { "Wheel_Left",     "ジョグダイヤル左回転" }, { "Wheel_Right",    "ジョグダイヤル右回転" },
-
-      { "1"  , "1"   },
-      { "2♭", "2♭" },
-      { "2"  , "2"   },
-      { "3♭", "3♭" },
-      { "3"  , "3"   },
-      { "4"  , "4"   },
-      { "5♭", "5♭" },
-      { "5"  , "5"   },
-      { "6♭", "6♭" },
-      { "6"  , "6"   },
-      { "7♭", "7♭" },
-      { "7"  , "7"   },
-
-      { "1〜"  , "1〜"   },
-      { "2♭〜", "2♭〜" },
-      { "2〜"  , "2〜"   },
-      { "3♭〜", "3♭〜" },
-      { "3〜"  , "3〜"   },
-      { "4〜"  , "4〜"   },
-      { "5♭〜", "5♭〜" },
-      { "5〜"  , "5〜"   },
-      { "6♭〜", "6♭〜" },
-      { "6〜"  , "6〜"   },
-      { "7♭〜", "7♭〜" },
-      { "7〜"  , "7〜"   },
-
-      { "1 [ 7 ]",    "1 [ 7 ]"    },
-      { "1 [ M7 ]",   "1 [ M7 ]"   },
-      { "2 [ 7 ]",    "2 [ 7 ]"    },
-      { "3 [ 7 ]",    "3 [ 7 ]"    },
-      { "3〜[ 7 ]",   "3〜[ 7 ]"   },
-      { "4 [ 7 ]",    "4 [ 7 ]"    },
-      { "4 [ M7 ]",   "4 [ M7 ]"   },
-      { "5 [ 7 ]",    "5 [ 7 ]"    },
-      { "6 [ 7 ]",    "6 [ 7 ]"    },
-      { "7 [ 7 ]",    "7 [ 7 ]"    },
-      { "7〜[ 7 ]",   "7〜[ 7 ]"   },
-      { "7 [ m7-5 ]", "7 [ m7-5 ]" },
-      { "7 [ dim ]",  "7 [ dim ]"  },
-
-      { "[ dim ]",   "[ dim ]"   },
-      { "[ m7-5 ]",  "[ m7-5 ]"  },
-      { "[ sus4 ]",  "[ sus4 ]"  },
-      { "[ 6 ]",     "[ 6 ]"     },
-      { "[ 7 ]",     "[ 7 ]"     },
-      { "[ Add9 ]",  "[ Add9 ]"  },
-      { "[ M7 ]",    "[ M7 ]"    },
-      { "[ aug ]",   "[ aug ]"   },
-      { "[ 7sus4 ]", "[ 7sus4 ]" },
-      { "[ dim7 ]",  "[ dim7 ]"  },
-      { "〜",     "〜" },
-      { "♭",     "♭" },
-      { "♯",     "♯" },
-
-      { "/1"  , "/1"   },
-      { "/2♭", "/2♭" },
-      { "/2"  , "/2"   },
-      { "/3♭", "/3♭" },
-      { "/3"  , "/3"   },
-      { "/4"  , "/4"   },
-      { "/5♭", "/5♭" },
-      { "/5"  , "/5"   },
-      { "/6♭", "/6♭" },
-      { "/6"  , "/6"   },
-      { "/7♭", "/7♭" },
-      { "/7"  , "/7"   },
-
-      { "〜[ 7 ]",     "〜[ 7 ]"     },
-      { "♭〜",        "♭〜"        },
-      { "♭〜[ 7 ]",   "♭〜[ 7 ]"   },
-      { "♭ [ dim ]",  "♭ [ dim ]"  },
-      { "♯ [ dim ]",  "♯ [ dim ]"  },
-      { "♭ [ m7-5 ]", "♭ [ m7-5 ]" },
-      { "♯ [ m7-5 ]", "♯ [ m7-5 ]" },
-
-      { "Part 1 ON", "パート1 ON" },
-      { "Part 2 ON", "パート2 ON" },
-      { "Part 3 ON", "パート3 ON" },
-      { "Part 4 ON", "パート4 ON" },
-      { "Part 5 ON", "パート5 ON" },
-      { "Part 6 ON", "パート6 ON" },
-
-      { "Part 1 OFF", "パート1 OFF" },
-      { "Part 2 OFF", "パート2 OFF" },
-      { "Part 3 OFF", "パート3 OFF" },
-      { "Part 4 OFF", "パート4 OFF" },
-      { "Part 5 OFF", "パート5 OFF" },
-      { "Part 6 OFF", "パート6 OFF" },
-
-      { "Part 1 Edit", "パート1 編集" },
-      { "Part 2 Edit", "パート2 編集" },
-      { "Part 3 Edit", "パート3 編集" },
-      { "Part 4 Edit", "パート4 編集" },
-      { "Part 5 Edit", "パート5 編集" },
-      { "Part 6 Edit", "パート6 編集" },
-
-      { "---", "---" },
-
-    }};
-    static constexpr const def::command::command_param_array_t listitem[] = {
-      { def::command::internal_button, 1 }, { def::command::internal_button, 2 }, { def::command::internal_button, 3 }, { def::command::internal_button, 4 }, { def::command::internal_button, 5 },
-      { def::command::internal_button, 6 }, { def::command::internal_button, 7 }, { def::command::internal_button, 8 }, { def::command::internal_button, 9 }, { def::command::internal_button,10 },
-      { def::command::internal_button,11 }, { def::command::internal_button,12 }, { def::command::internal_button,13 }, { def::command::internal_button,14 }, { def::command::internal_button,15 },
-
-      { def::command::internal_button,16 }, { def::command::internal_button,17 }, { def::command::internal_button,18 }, { def::command::internal_button,19 },
-      
-      { def::command::internal_button,22, def::command::internal_button,16 },
-      { def::command::internal_button,22, def::command::internal_button,17 },
-      { def::command::internal_button,22, def::command::internal_button,18 },
-      { def::command::internal_button,22, def::command::internal_button,19 },
-      
-      { def::command::internal_button,20 },
-      { def::command::internal_button,21 }, { def::command::internal_button,22 }, { def::command::internal_button,23 }, { def::command::internal_button,24 }, { def::command::internal_button,25 },
-      { def::command::internal_button,26 }, { def::command::internal_button,27 }, { def::command::internal_button,28 }, { def::command::internal_button,29 }, { def::command::internal_button,30 },
-      { def::command::internal_button,31 }, { def::command::internal_button,32 },
-
-      { def::command::chord_degree, 1 },
-      { def::command::chord_semitone, 1, def::command::chord_degree, 2 },
-      { def::command::chord_degree, 2 },
-      { def::command::chord_semitone, 1, def::command::chord_degree, 3 },
-      { def::command::chord_degree, 3 },
-      { def::command::chord_degree, 4 },
-      { def::command::chord_semitone, 1, def::command::chord_degree, 5 },
-      { def::command::chord_degree, 5 },
-      { def::command::chord_semitone, 1, def::command::chord_degree, 6 },
-      { def::command::chord_degree, 6 },
-      { def::command::chord_semitone, 1, def::command::chord_degree, 7 },
-      { def::command::chord_degree, 7 },
-
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 1 },
-      { def::command::chord_minor_swap, 1, def::command::chord_semitone, 1, def::command::chord_degree, 2 },
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 2 },
-      { def::command::chord_minor_swap, 1, def::command::chord_semitone, 1, def::command::chord_degree, 3 },
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 3 },
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 4 },
-      { def::command::chord_minor_swap, 1, def::command::chord_semitone, 1, def::command::chord_degree, 5 },
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 5 },
-      { def::command::chord_minor_swap, 1, def::command::chord_semitone, 1, def::command::chord_degree, 6 },
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 6 },
-      { def::command::chord_minor_swap, 1, def::command::chord_semitone, 1, def::command::chord_degree, 7 },
-      { def::command::chord_minor_swap, 1,                                  def::command::chord_degree, 7 },
-
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 1 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_M7   ,                                    def::command::chord_degree, 1 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 2 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 3 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    , def::command::chord_minor_swap, 1, def::command::chord_degree, 3 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 4 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_M7   ,                                    def::command::chord_degree, 4 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 5 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 6 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    ,                                    def::command::chord_degree, 7 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_7    , def::command::chord_minor_swap, 1, def::command::chord_degree, 7 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_m7_5 ,                                    def::command::chord_degree, 7 },
-      { def::command::chord_modifier, KANTANMusic_Modifier_dim  ,                                    def::command::chord_degree, 7 },
-
-      { def::command::chord_modifier  , KANTANMusic_Modifier_dim  },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_m7_5 },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_sus4 },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_6    },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_7    },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_Add9 },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_M7   },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_aug  },
-      { def::command::chord_modifier  , KANTANMusic_Modifier_7sus4},
-      { def::command::chord_modifier  , KANTANMusic_Modifier_dim7 },
-      { def::command::chord_minor_swap, 1 },
-      { def::command::chord_semitone  , 1 },
-      { def::command::chord_semitone  , 2 },
-
-      {                                       def::command::chord_bass_degree, 1 },
-      { def::command::chord_bass_semitone, 1, def::command::chord_bass_degree, 2 },
-      {                                       def::command::chord_bass_degree, 2 },
-      { def::command::chord_bass_semitone, 1, def::command::chord_bass_degree, 3 },
-      {                                       def::command::chord_bass_degree, 3 },
-      {                                       def::command::chord_bass_degree, 4 },
-      { def::command::chord_bass_semitone, 1, def::command::chord_bass_degree, 5 },
-      {                                       def::command::chord_bass_degree, 5 },
-      { def::command::chord_bass_semitone, 1, def::command::chord_bass_degree, 6 },
-      {                                       def::command::chord_bass_degree, 6 },
-      { def::command::chord_bass_semitone, 1, def::command::chord_bass_degree, 7 },
-      {                                       def::command::chord_bass_degree, 7 },
-
-      {                                  def::command::chord_minor_swap, 1, def::command::chord_modifier, KANTANMusic_Modifier_7    },
-      { def::command::chord_semitone, 1, def::command::chord_minor_swap, 1,                                                         },
-      { def::command::chord_semitone, 1, def::command::chord_minor_swap, 1, def::command::chord_modifier, KANTANMusic_Modifier_7    },
-      { def::command::chord_semitone, 1,                                    def::command::chord_modifier, KANTANMusic_Modifier_dim  },
-      { def::command::chord_semitone, 2,                                    def::command::chord_modifier, KANTANMusic_Modifier_dim  },
-      { def::command::chord_semitone, 1,                                    def::command::chord_modifier, KANTANMusic_Modifier_m7_5 },
-      { def::command::chord_semitone, 2,                                    def::command::chord_modifier, KANTANMusic_Modifier_m7_5 },
-
-      { def::command::part_on, 1 },
-      { def::command::part_on, 2 },
-      { def::command::part_on, 3 },
-      { def::command::part_on, 4 },
-      { def::command::part_on, 5 },
-      { def::command::part_on, 6 },
-
-      { def::command::part_off, 1 },
-      { def::command::part_off, 2 },
-      { def::command::part_off, 3 },
-      { def::command::part_off, 4 },
-      { def::command::part_off, 5 },
-      { def::command::part_off, 6 },
-
-      { def::command::part_edit, 1 },
-      { def::command::part_edit, 2 },
-      { def::command::part_edit, 3 },
-      { def::command::part_edit, 4 },
-      { def::command::part_edit, 5 },
-      { def::command::part_edit, 6 },
-
-      { def::command::none }
-    };
-  public:
-    constexpr mi_ext_assign_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, uint8_t button_index)
-    : mi_selector_t { cate, seq, level, title, &name_array }
-    , _button_index { button_index } {}
-  
-    int getValue(void) const override
-    {
-      auto cmd = system_registry.command_mapping_external.getCommandParamArray(_button_index);
-      int index = 0;
-      for (int i = 0; ; ++i) {
-        auto c = listitem[i];
-        if (c == cmd) {
-          return getMinValue() + i;
-        }
-        if (c.array[0].command == def::command::none) { break; }
-      }
-      return getMinValue();
-    }
-    bool setValue(int value) const override
-    {
-      if (mi_selector_t::setValue(value) == false) { return false; }
-      value -= getMinValue();
-      system_registry.command_mapping_external.setCommandParamArray(_button_index, listitem[value]);
-      return true;
-    }
-  };
-
-struct mi_midi_assign_t : public mi_ext_assign_t {
+// control assignment for internal
+struct mi_ca_external_t : public mi_ctrl_assign_t {
 public:
-  constexpr mi_midi_assign_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, uint8_t button_index)
-  : mi_ext_assign_t { cate, seq, level, title, button_index }
-  {}
+  constexpr mi_ca_external_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, uint8_t button_index)
+  : mi_ctrl_assign_t { cate, seq, level, title, def::ctrl_assign::external_table, sizeof(def::ctrl_assign::external_table) / sizeof(def::ctrl_assign::external_table[0])-1 }
+  , _button_index { button_index } {}
 
   int getValue(void) const override
   {
-    auto cmd = system_registry.command_mapping_midi.getCommandParamArray(_button_index);
-    int index = 0;
-    for (int i = 0; ; ++i) {
-      auto c = listitem[i];
-      if (c == cmd) {
-        return getMinValue() + i;
-      }
-      if (c.array[0].command == def::command::none) { break; }
+    auto cmd = system_registry.command_mapping_external.getCommandParamArray(_button_index);
+    int index = def::ctrl_assign::get_index_from_command(_table, cmd);
+    if (index < 0) {
+      index = 0;
     }
-    return getMinValue();
+    return getMinValue() + index;
   }
   bool setValue(int value) const override
   {
-    if (mi_selector_t::setValue(value) == false) { return false; }
+    if (mi_ctrl_assign_t::setValue(value) == false) { return false; }
     value -= getMinValue();
-    system_registry.command_mapping_midi.setCommandParamArray(_button_index, listitem[value]);
+    system_registry.command_mapping_external.setCommandParamArray(_button_index, _table[value].command);
     return true;
   }
+
+protected:
+  const uint8_t _button_index;
+};
+
+struct mi_ca_midinote_t : public mi_ctrl_assign_t {
+public:
+  constexpr mi_ca_midinote_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, uint8_t button_index)
+  : mi_ctrl_assign_t { cate, seq, level, title, def::ctrl_assign::external_table, sizeof(def::ctrl_assign::external_table) / sizeof(def::ctrl_assign::external_table[0])-1 }
+  , _button_index { button_index } {}
+
+  int getValue(void) const override
+  {
+    auto cmd = system_registry.command_mapping_midinote.getCommandParamArray(_button_index);
+    int index = def::ctrl_assign::get_index_from_command(_table, cmd);
+    if (index < 0) {
+      index = 0;
+    }
+    return getMinValue() + index;
+  }
+  bool setValue(int value) const override
+  {
+    if (mi_ctrl_assign_t::setValue(value) == false) { return false; }
+    value -= getMinValue();
+    system_registry.command_mapping_midinote.setCommandParamArray(_button_index, _table[value].command);
+    return true;
+  }
+
+protected:
+  const uint8_t _button_index;
 };
 
 struct mi_midi_selector_t : public mi_selector_t {
@@ -1734,201 +1491,201 @@ static constexpr menu_item_ptr menu_system[] = {
 // TODO:これ追加 Auto / Manual ( 初期値 Auto )
 //(const mi_song_swing_t    []){{ def::menu_category_t::menu_system, 14,  2  , { "Offbeat Control", "裏拍演奏"     }}},
   (const mi_tree_t          []){{ def::menu_category_t::menu_system, 14, 1   , { "System"         , "システム"     }}},
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 15,  2  , { "WiFi"           , "WiFi通信"    }}},
-  (const mi_usewifi_t       []){{ def::menu_category_t::menu_system, 16,   3 , { "Connection"     , "接続"        }}},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 15,  2  , { "WiFi"           , "WiFi通信"     }}},
+  (const mi_usewifi_t       []){{ def::menu_category_t::menu_system, 16,   3 , { "Connection"     , "接続"         }}},
   (const mi_otaupdate_t     []){{ def::menu_category_t::menu_system, 17,   3 , { "Firm Update"    , "ファーム更新" }}},
   (const mi_wifiap_t        []){{ def::menu_category_t::menu_system, 18,   3 , { "WiFi Setup"     , "WiFi設定"     }}},
 
   (const mi_tree_t          []){{ def::menu_category_t::menu_system, 19,  2   , { "Control Assignment", "操作割り当て"   }}},
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 20,   3  , { "Play Button"    , "プレイボタン"   }}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 21,    4 , { "Button 4"       , "ボタン 4"      },  4 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 22,    4 , { "Button 5"       , "ボタン 5"      },  5 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 23,    4 , { "Button 9"       , "ボタン 9"      },  9 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 24,    4 , { "Button 10"      , "ボタン 10"     }, 10 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 25,    4 , { "Button 12"      , "ボタン 12"     }, 12 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 26,    4 , { "Button 13"      , "ボタン 13"     }, 13 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 27,    4 , { "Button 14"      , "ボタン 14"     }, 14 - 1}},
-  (const mi_modifier_t      []){{ def::menu_category_t::menu_system, 28,    4 , { "Button 15"      , "ボタン 15"     }, 15 - 1}},
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 29,   3  , { "Ext Box"        , "拡張ボックス"  }}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 30,    4 , { "Ext 1"          , "拡張ボタン 1"        },  1 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 31,    4 , { "Ext 2"          , "拡張ボタン 2"        },  2 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 32,    4 , { "Ext 3"          , "拡張ボタン 3"        },  3 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 33,    4 , { "Ext 4"          , "拡張ボタン 4"        },  4 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 34,    4 , { "Ext 5"          , "拡張ボタン 5"        },  5 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 35,    4 , { "Ext 6"          , "拡張ボタン 6"        },  6 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 36,    4 , { "Ext 7"          , "拡張ボタン 7"        },  7 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 37,    4 , { "Ext 8"          , "拡張ボタン 8"        },  8 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 38,    4 , { "Ext 9"          , "拡張ボタン 9"        },  9 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 39,    4 , { "Ext 10"         , "拡張ボタン 10"       },  10 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 40,    4 , { "Ext 11"         , "拡張ボタン 11"       },  11 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 41,    4 , { "Ext 12"         , "拡張ボタン 12"       },  12 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 42,    4 , { "Ext 13"         , "拡張ボタン 13"       },  13 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 43,    4 , { "Ext 14"         , "拡張ボタン 14"       },  14 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 44,    4 , { "Ext 15"         , "拡張ボタン 15"       },  15 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 45,    4 , { "Ext 16"         , "拡張ボタン 16"       },  16 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 46,    4 , { "Ext 17"         , "拡張ボタン 17"       },  17 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 47,    4 , { "Ext 18"         , "拡張ボタン 18"       },  18 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 48,    4 , { "Ext 19"         , "拡張ボタン 19"       },  19 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 49,    4 , { "Ext 20"         , "拡張ボタン 20"       },  20 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 50,    4 , { "Ext 21"         , "拡張ボタン 21"       },  21 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 51,    4 , { "Ext 22"         , "拡張ボタン 22"       },  22 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 52,    4 , { "Ext 23"         , "拡張ボタン 23"       },  23 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 53,    4 , { "Ext 24"         , "拡張ボタン 24"       },  24 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 54,    4 , { "Ext 25"         , "拡張ボタン 25"       },  25 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 55,    4 , { "Ext 26"         , "拡張ボタン 26"       },  26 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 56,    4 , { "Ext 27"         , "拡張ボタン 27"       },  27 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 57,    4 , { "Ext 28"         , "拡張ボタン 28"       },  28 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 58,    4 , { "Ext 29"         , "拡張ボタン 29"       },  29 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 59,    4 , { "Ext 30"         , "拡張ボタン 30"       },  30 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 60,    4 , { "Ext 31"         , "拡張ボタン 31"       },  31 - 1}},
-  (const mi_ext_assign_t    []){{ def::menu_category_t::menu_system, 61,    4 , { "Ext 32"         , "拡張ボタン 32"       },  32 - 1}},
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 62,   3  , { "MIDI Note"      , "MIDI Note"    }}},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 63,    4 , { "C -1 (0)"   , "C -1 (0)"        },   0 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 64,    4 , { "C#-1 (1)"   , "C#-1 (1)"        },   1 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 65,    4 , { "D -1 (2)"   , "D -1 (2)"        },   2 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 66,    4 , { "D#-1 (3)"   , "D#-1 (3)"        },   3 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 67,    4 , { "E -1 (4)"   , "E -1 (4)"        },   4 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 68,    4 , { "F -1 (5)"   , "F -1 (5)"        },   5 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 69,    4 , { "F#-1 (6)"   , "F#-1 (6)"        },   6 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 70,    4 , { "G -1 (7)"   , "G -1 (7)"        },   7 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 71,    4 , { "G#-1 (8)"   , "G#-1 (8)"        },   8 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 72,    4 , { "A -1 (9)"   , "A -1 (9)"        },   9 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 73,    4 , { "A#-1 (10)"  , "A#-1 (10)"       },  10 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 74,    4 , { "B -1 (11)"  , "B -1 (11)"       },  11 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 75,    4 , { "C  0 (12)"  , "C  0 (12)"       },  12 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 76,    4 , { "C# 0 (13)"  , "C# 0 (13)"       },  13 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 77,    4 , { "D  0 (14)"  , "D  0 (14)"       },  14 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 78,    4 , { "D# 0 (15)"  , "D# 0 (15)"       },  15 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 79,    4 , { "E  0 (16)"  , "E  0 (16)"       },  16 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 80,    4 , { "F  0 (17)"  , "F  0 (17)"       },  17 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 81,    4 , { "F# 0 (18)"  , "F# 0 (18)"       },  18 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 82,    4 , { "G  0 (19)"  , "G  0 (19)"       },  19 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 83,    4 , { "G# 0 (20)"  , "G# 0 (20)"       },  20 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 84,    4 , { "A  0 (21)"  , "A  0 (21)"       },  21 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 85,    4 , { "A# 0 (22)"  , "A# 0 (22)"       },  22 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 86,    4 , { "B  0 (23)"  , "B  0 (23)"       },  23 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 87,    4 , { "C  1 (24)"  , "C  1 (24)"       },  24 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 88,    4 , { "C# 1 (25)"  , "C# 1 (25)"       },  25 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 89,    4 , { "D  1 (26)"  , "D  1 (26)"       },  26 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 90,    4 , { "D# 1 (27)"  , "D# 1 (27)"       },  27 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 91,    4 , { "E  1 (28)"  , "E  1 (28)"       },  28 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 92,    4 , { "F  1 (29)"  , "F  1 (29)"       },  29 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 93,    4 , { "F# 1 (30)"  , "F# 1 (30)"       },  30 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 94,    4 , { "G  1 (31)"  , "G  1 (31)"       },  31 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 95,    4 , { "G# 1 (32)"  , "G# 1 (32)"       },  32 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 96,    4 , { "A  1 (33)"  , "A  1 (33)"       },  33 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 97,    4 , { "A# 1 (34)"  , "A# 1 (34)"       },  34 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 98,    4 , { "B  1 (35)"  , "B  1 (35)"       },  35 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system, 99,    4 , { "C  2 (36)"  , "C  2 (36)"       },  36 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,100,    4 , { "C# 2 (37)"  , "C# 2 (37)"       },  37 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,101,    4 , { "D  2 (38)"  , "D  2 (38)"       },  38 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,102,    4 , { "D# 2 (39)"  , "D# 2 (39)"       },  39 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,103,    4 , { "E  2 (40)"  , "E  2 (40)"       },  40 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,104,    4 , { "F  2 (41)"  , "F  2 (41)"       },  41 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,105,    4 , { "F# 2 (42)"  , "F# 2 (42)"       },  42 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,106,    4 , { "G  2 (43)"  , "G  2 (43)"       },  43 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,107,    4 , { "G# 2 (44)"  , "G# 2 (44)"       },  44 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,108,    4 , { "A  2 (45)"  , "A  2 (45)"       },  45 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,109,    4 , { "A# 2 (46)"  , "A# 2 (46)"       },  46 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,110,    4 , { "B  2 (47)"  , "B  2 (47)"       },  47 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,111,    4 , { "C  3 (48)"  , "C  3 (48)"       },  48 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,112,    4 , { "C# 3 (49)"  , "C# 3 (49)"       },  49 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,113,    4 , { "D  3 (50)"  , "D  3 (50)"       },  50 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,114,    4 , { "D# 3 (51)"  , "D# 3 (51)"       },  51 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,115,    4 , { "E  3 (52)"  , "E  3 (52)"       },  52 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,116,    4 , { "F  3 (53)"  , "F  3 (53)"       },  53 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,117,    4 , { "F# 3 (54)"  , "F# 3 (54)"       },  54 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,118,    4 , { "G  3 (55)"  , "G  3 (55)"       },  55 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,119,    4 , { "G# 3 (56)"  , "G# 3 (56)"       },  56 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,120,    4 , { "A  3 (57)"  , "A  3 (57)"       },  57 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,121,    4 , { "A# 3 (58)"  , "A# 3 (58)"       },  58 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,122,    4 , { "B  3 (59)"  , "B  3 (59)"       },  59 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,123,    4 , { "C  4 (60)"  , "C  4 (60)"       },  60 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,124,    4 , { "C# 4 (61)"  , "C# 4 (61)"       },  61 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,125,    4 , { "D  4 (62)"  , "D  4 (62)"       },  62 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,126,    4 , { "D# 4 (63)"  , "D# 4 (63)"       },  63 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,127,    4 , { "E  4 (64)"  , "E  4 (64)"       },  64 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,128,    4 , { "F  4 (65)"  , "F  4 (65)"       },  65 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,129,    4 , { "F# 4 (66)"  , "F# 4 (66)"       },  66 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,130,    4 , { "G  4 (67)"  , "G  4 (67)"       },  67 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,131,    4 , { "G# 4 (68)"  , "G# 4 (68)"       },  68 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,132,    4 , { "A  4 (69)"  , "A  4 (69)"       },  69 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,133,    4 , { "A# 4 (70)"  , "A# 4 (70)"       },  70 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,134,    4 , { "B  4 (71)"  , "B  4 (71)"       },  71 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,135,    4 , { "C  5 (72)"  , "C  5 (72)"       },  72 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,136,    4 , { "C# 5 (73)"  , "C# 5 (73)"       },  73 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,137,    4 , { "D  5 (74)"  , "D  5 (74)"       },  74 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,138,    4 , { "D# 5 (75)"  , "D# 5 (75)"       },  75 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,139,    4 , { "E  5 (76)"  , "E  5 (76)"       },  76 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,140,    4 , { "F  5 (77)"  , "F  5 (77)"       },  77 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,141,    4 , { "F# 5 (78)"  , "F# 5 (78)"       },  78 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,142,    4 , { "G  5 (79)"  , "G  5 (79)"       },  79 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,143,    4 , { "G# 5 (80)"  , "G# 5 (80)"       },  80 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,144,    4 , { "A  5 (81)"  , "A  5 (81)"       },  81 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,145,    4 , { "A# 5 (82)"  , "A# 5 (82)"       },  82 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,146,    4 , { "B  5 (83)"  , "B  5 (83)"       },  83 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,147,    4 , { "C  6 (84)"  , "C  6 (84)"       },  84 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,148,    4 , { "C# 6 (85)"  , "C# 6 (85)"       },  85 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,149,    4 , { "D  6 (86)"  , "D  6 (86)"       },  86 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,150,    4 , { "D# 6 (87)"  , "D# 6 (87)"       },  87 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,151,    4 , { "E  6 (88)"  , "E  6 (88)"       },  88 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,152,    4 , { "F  6 (89)"  , "F  6 (89)"       },  89 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,153,    4 , { "F# 6 (90)"  , "F# 6 (90)"       },  90 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,154,    4 , { "G  6 (91)"  , "G  6 (91)"       },  91 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,155,    4 , { "G# 6 (92)"  , "G# 6 (92)"       },  92 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,156,    4 , { "A  6 (93)"  , "A  6 (93)"       },  93 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,157,    4 , { "A# 6 (94)"  , "A# 6 (94)"       },  94 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,158,    4 , { "B  6 (95)"  , "B  6 (95)"       },  95 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,159,    4 , { "C  7 (96)"  , "C  7 (96)"       },  96 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,160,    4 , { "C# 7 (97)"  , "C# 7 (97)"       },  97 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,161,    4 , { "D  7 (98)"  , "D  7 (98)"       },  98 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,162,    4 , { "D# 7 (99)"  , "D# 7 (99)"       },  99 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,163,    4 , { "E  7 (100)" , "E  7 (100)"      }, 100 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,164,    4 , { "F  7 (101)" , "F  7 (101)"      }, 101 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,165,    4 , { "F# 7 (102)" , "F# 7 (102)"      }, 102 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,166,    4 , { "G  7 (103)" , "G  7 (103)"      }, 103 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,167,    4 , { "G# 7 (104)" , "G# 7 (104)"      }, 104 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,168,    4 , { "A  7 (105)" , "A  7 (105)"      }, 105 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,169,    4 , { "A# 7 (106)" , "A# 7 (106)"      }, 106 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,170,    4 , { "B  7 (107)" , "B  7 (107)"      }, 107 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,171,    4 , { "C  8 (108)" , "C  8 (108)"      }, 108 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,172,    4 , { "C# 8 (109)" , "C# 8 (109)"      }, 109 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,173,    4 , { "D  8 (110)" , "D  8 (110)"      }, 110 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,174,    4 , { "D# 8 (111)" , "D# 8 (111)"      }, 111 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,175,    4 , { "E  8 (112)" , "E  8 (112)"      }, 112 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,176,    4 , { "F  8 (113)" , "F  8 (113)"      }, 113 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,177,    4 , { "F# 8 (114)" , "F# 8 (114)"      }, 114 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,178,    4 , { "G  8 (115)" , "G  8 (115)"      }, 115 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,179,    4 , { "G# 8 (116)" , "G# 8 (116)"      }, 116 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,180,    4 , { "A  8 (117)" , "A  8 (117)"      }, 117 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,181,    4 , { "A# 8 (118)" , "A# 8 (118)"      }, 118 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,182,    4 , { "B  8 (119)" , "B  8 (119)"      }, 119 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,183,    4 , { "C  9 (120)" , "C  9 (120)"      }, 120 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,184,    4 , { "C# 9 (121)" , "C# 9 (121)"      }, 121 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,185,    4 , { "D  9 (122)" , "D  9 (122)"      }, 122 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,186,    4 , { "D# 9 (123)" , "D# 9 (123)"      }, 123 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,187,    4 , { "E  9 (124)" , "E  9 (124)"      }, 124 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,188,    4 , { "F  9 (125)" , "F  9 (125)"      }, 125 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,189,    4 , { "F# 9 (126)" , "F# 9 (126)"      }, 126 }},
-  (const mi_midi_assign_t   []){{ def::menu_category_t::menu_system,190,    4 , { "G  9 (127)" , "G  9 (127)"      }, 127 }},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 20,   3  , { "Play Button"   , "プレイボタン" }}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 21,    4 , { "Button 4"      , "ボタン 4"     },  4 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 22,    4 , { "Button 5"      , "ボタン 5"     },  5 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 23,    4 , { "Button 9"      , "ボタン 9"     },  9 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 24,    4 , { "Button 10"     , "ボタン 10"    }, 10 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 25,    4 , { "Button 12"     , "ボタン 12"    }, 12 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 26,    4 , { "Button 13"     , "ボタン 13"    }, 13 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 27,    4 , { "Button 14"     , "ボタン 14"    }, 14 - 1}},
+  (const mi_ca_internal_t   []){{ def::menu_category_t::menu_system, 28,    4 , { "Button 15"     , "ボタン 15"    }, 15 - 1}},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 29,   3  , { "Ext Input"     , "拡張入力"     }}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 30,    4 , { " Ext 1"        , "拡張 1"       },   1 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 31,    4 , { " Ext 2"        , "拡張 2"       },   2 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 32,    4 , { " Ext 3"        , "拡張 3"       },   3 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 33,    4 , { " Ext 4"        , "拡張 4"       },   4 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 34,    4 , { " Ext 5"        , "拡張 5"       },   5 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 35,    4 , { " Ext 6"        , "拡張 6"       },   6 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 36,    4 , { " Ext 7"        , "拡張 7"       },   7 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 37,    4 , { " Ext 8"        , "拡張 8"       },   8 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 38,    4 , { " Ext 9"        , "拡張 9"       },   9 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 39,    4 , { " Ext 10"       , "拡張 10"      },  10 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 40,    4 , { " Ext 11"       , "拡張 11"      },  11 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 41,    4 , { " Ext 12"       , "拡張 12"      },  12 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 42,    4 , { " Ext 13"       , "拡張 13"      },  13 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 43,    4 , { " Ext 14"       , "拡張 14"      },  14 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 44,    4 , { " Ext 15"       , "拡張 15"      },  15 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 45,    4 , { " Ext 16"       , "拡張 16"      },  16 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 46,    4 , { " Ext 17"       , "拡張 17"      },  17 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 47,    4 , { " Ext 18"       , "拡張 18"      },  18 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 48,    4 , { " Ext 19"       , "拡張 19"      },  19 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 49,    4 , { " Ext 20"       , "拡張 20"      },  20 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 50,    4 , { " Ext 21"       , "拡張 21"      },  21 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 51,    4 , { " Ext 22"       , "拡張 22"      },  22 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 52,    4 , { " Ext 23"       , "拡張 23"      },  23 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 53,    4 , { " Ext 24"       , "拡張 24"      },  24 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 54,    4 , { " Ext 25"       , "拡張 25"      },  25 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 55,    4 , { " Ext 26"       , "拡張 26"      },  26 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 56,    4 , { " Ext 27"       , "拡張 27"      },  27 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 57,    4 , { " Ext 28"       , "拡張 28"      },  28 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 58,    4 , { " Ext 29"       , "拡張 29"      },  29 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 59,    4 , { " Ext 30"       , "拡張 30"      },  30 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 60,    4 , { " Ext 31"       , "拡張 31"      },  31 - 1}},
+  (const mi_ca_external_t   []){{ def::menu_category_t::menu_system, 61,    4 , { " Ext 32"       , "拡張 32"      },  32 - 1}},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system, 62,   3  , { "MIDI Note"     , "MIDI Note"    }}},
+//(const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 63,    4 , { "  C -1" , nullptr },   0 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 63,    4 , { "  C#-1" , nullptr },   1 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 64,    4 , { "  D -1" , nullptr },   2 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 65,    4 , { "  D#-1" , nullptr },   3 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 66,    4 , { "  E -1" , nullptr },   4 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 67,    4 , { "  F -1" , nullptr },   5 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 68,    4 , { "  F#-1" , nullptr },   6 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 69,    4 , { "  G -1" , nullptr },   7 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 70,    4 , { "  G#-1" , nullptr },   8 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 71,    4 , { "  A -1" , nullptr },   9 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 72,    4 , { "  A#-1" , nullptr },  10 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 73,    4 , { "  B -1" , nullptr },  11 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 74,    4 , { "  C  0" , nullptr },  12 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 75,    4 , { "  C# 0" , nullptr },  13 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 76,    4 , { "  D  0" , nullptr },  14 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 77,    4 , { "  D# 0" , nullptr },  15 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 78,    4 , { "  E  0" , nullptr },  16 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 79,    4 , { "  F  0" , nullptr },  17 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 80,    4 , { "  F# 0" , nullptr },  18 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 81,    4 , { "  G  0" , nullptr },  19 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 82,    4 , { "  G# 0" , nullptr },  20 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 83,    4 , { "  A  0" , nullptr },  21 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 84,    4 , { "  A# 0" , nullptr },  22 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 85,    4 , { "  B  0" , nullptr },  23 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 86,    4 , { "  C  1" , nullptr },  24 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 87,    4 , { "  C# 1" , nullptr },  25 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 88,    4 , { "  D  1" , nullptr },  26 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 89,    4 , { "  D# 1" , nullptr },  27 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 90,    4 , { "  E  1" , nullptr },  28 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 91,    4 , { "  F  1" , nullptr },  29 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 92,    4 , { "  F# 1" , nullptr },  30 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 93,    4 , { "  G  1" , nullptr },  31 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 94,    4 , { "  G# 1" , nullptr },  32 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 95,    4 , { "  A  1" , nullptr },  33 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 96,    4 , { "  A# 1" , nullptr },  34 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 97,    4 , { "  B  1" , nullptr },  35 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 98,    4 , { "  C  2" , nullptr },  36 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system, 99,    4 , { "  C# 2" , nullptr },  37 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,100,    4 , { "  D  2" , nullptr },  38 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,101,    4 , { "  D# 2" , nullptr },  39 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,102,    4 , { "  E  2" , nullptr },  40 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,103,    4 , { "  F  2" , nullptr },  41 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,104,    4 , { "  F# 2" , nullptr },  42 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,105,    4 , { "  G  2" , nullptr },  43 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,106,    4 , { "  G# 2" , nullptr },  44 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,107,    4 , { "  A  2" , nullptr },  45 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,108,    4 , { "  A# 2" , nullptr },  46 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,109,    4 , { "  B  2" , nullptr },  47 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,110,    4 , { "  C  3" , nullptr },  48 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,111,    4 , { "  C# 3" , nullptr },  49 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,112,    4 , { "  D  3" , nullptr },  50 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,113,    4 , { "  D# 3" , nullptr },  51 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,114,    4 , { "  E  3" , nullptr },  52 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,115,    4 , { "  F  3" , nullptr },  53 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,116,    4 , { "  F# 3" , nullptr },  54 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,117,    4 , { "  G  3" , nullptr },  55 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,118,    4 , { "  G# 3" , nullptr },  56 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,119,    4 , { "  A  3" , nullptr },  57 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,120,    4 , { "  A# 3" , nullptr },  58 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,121,    4 , { "  B  3" , nullptr },  59 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,122,    4 , { "  C  4" , nullptr },  60 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,123,    4 , { "  C# 4" , nullptr },  61 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,124,    4 , { "  D  4" , nullptr },  62 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,125,    4 , { "  D# 4" , nullptr },  63 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,126,    4 , { "  E  4" , nullptr },  64 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,127,    4 , { "  F  4" , nullptr },  65 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,128,    4 , { "  F# 4" , nullptr },  66 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,129,    4 , { "  G  4" , nullptr },  67 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,130,    4 , { "  G# 4" , nullptr },  68 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,131,    4 , { "  A  4" , nullptr },  69 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,132,    4 , { "  A# 4" , nullptr },  70 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,133,    4 , { "  B  4" , nullptr },  71 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,134,    4 , { "  C  5" , nullptr },  72 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,135,    4 , { "  C# 5" , nullptr },  73 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,136,    4 , { "  D  5" , nullptr },  74 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,137,    4 , { "  D# 5" , nullptr },  75 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,138,    4 , { "  E  5" , nullptr },  76 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,139,    4 , { "  F  5" , nullptr },  77 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,140,    4 , { "  F# 5" , nullptr },  78 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,141,    4 , { "  G  5" , nullptr },  79 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,142,    4 , { "  G# 5" , nullptr },  80 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,143,    4 , { "  A  5" , nullptr },  81 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,144,    4 , { "  A# 5" , nullptr },  82 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,145,    4 , { "  B  5" , nullptr },  83 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,146,    4 , { "  C  6" , nullptr },  84 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,147,    4 , { "  C# 6" , nullptr },  85 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,148,    4 , { "  D  6" , nullptr },  86 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,149,    4 , { "  D# 6" , nullptr },  87 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,150,    4 , { "  E  6" , nullptr },  88 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,151,    4 , { "  F  6" , nullptr },  89 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,152,    4 , { "  F# 6" , nullptr },  90 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,153,    4 , { "  G  6" , nullptr },  91 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,154,    4 , { "  G# 6" , nullptr },  92 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,155,    4 , { "  A  6" , nullptr },  93 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,156,    4 , { "  A# 6" , nullptr },  94 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,157,    4 , { "  B  6" , nullptr },  95 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,158,    4 , { "  C  7" , nullptr },  96 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,159,    4 , { "  C# 7" , nullptr },  97 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,160,    4 , { "  D  7" , nullptr },  98 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,161,    4 , { "  D# 7" , nullptr },  99 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,162,    4 , { "  E  7" , nullptr }, 100 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,163,    4 , { "  F  7" , nullptr }, 101 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,164,    4 , { "  F# 7" , nullptr }, 102 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,165,    4 , { "  G  7" , nullptr }, 103 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,166,    4 , { "  G# 7" , nullptr }, 104 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,167,    4 , { "  A  7" , nullptr }, 105 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,168,    4 , { "  A# 7" , nullptr }, 106 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,169,    4 , { "  B  7" , nullptr }, 107 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,170,    4 , { "  C  8" , nullptr }, 108 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,171,    4 , { "  C# 8" , nullptr }, 109 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,172,    4 , { "  D  8" , nullptr }, 110 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,173,    4 , { "  D# 8" , nullptr }, 111 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,174,    4 , { "  E  8" , nullptr }, 112 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,175,    4 , { "  F  8" , nullptr }, 113 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,176,    4 , { "  F# 8" , nullptr }, 114 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,177,    4 , { "  G  8" , nullptr }, 115 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,178,    4 , { "  G# 8" , nullptr }, 116 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,179,    4 , { "  A  8" , nullptr }, 117 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,180,    4 , { "  A# 8" , nullptr }, 118 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,181,    4 , { "  B  8" , nullptr }, 119 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,182,    4 , { "  C  9" , nullptr }, 120 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,183,    4 , { "  C# 9" , nullptr }, 121 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,184,    4 , { "  D  9" , nullptr }, 122 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,185,    4 , { "  D# 9" , nullptr }, 123 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,186,    4 , { "  E  9" , nullptr }, 124 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,187,    4 , { "  F  9" , nullptr }, 125 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,188,    4 , { "  F# 9" , nullptr }, 126 }},
+  (const mi_ca_midinote_t   []){{ def::menu_category_t::menu_system,189,    4 , { "  G  9" , nullptr }, 127 }},
 
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system,191,  2   , { "External Device", "外部デバイス" }}},
-  (const mi_portc_midi_t    []){{ def::menu_category_t::menu_system,192,   3  , { "PortC MIDI"     , "ポートC MIDI" }}},
-  (const mi_ble_midi_t      []){{ def::menu_category_t::menu_system,193,   3  , { "BLE MIDI"       , "BLE MIDI"     }}},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system,190,  2   , { "External Device", "外部デバイス" }}},
+  (const mi_portc_midi_t    []){{ def::menu_category_t::menu_system,191,   3  , { "PortC MIDI"     , "ポートC MIDI" }}},
+  (const mi_ble_midi_t      []){{ def::menu_category_t::menu_system,192,   3  , { "BLE MIDI"       , "BLE MIDI"     }}},
 // TODO:これ追加  OFF,80,81-89,90 (初期値80)
-//(const mi_ble_midi_t      []){{ def::menu_category_t::menu_system, 31,   3 , { "#CC Assignment" , "#CC割当"     }}},
-  (const mi_imu_velocity_t  []){{ def::menu_category_t::menu_system,194,  2  , { "IMU Velocity"   , "IMUベロシティ"}}},
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system,195,  2  , { "Display"        , "表示"        }}},
-  (const mi_lcd_backlight_t []){{ def::menu_category_t::menu_system,196,   3 , { "Backlight"      , "画面の輝度"  }}},
-  (const mi_led_brightness_t[]){{ def::menu_category_t::menu_system,197,   3 , { "LED Brightness" , "LEDの輝度"   }}},
-  (const mi_detail_view_t   []){{ def::menu_category_t::menu_system,198,   3 , { "Detail View"    , "詳細表示"    }}},
-  (const mi_wave_view_t     []){{ def::menu_category_t::menu_system,199,   3 , { "Wave View"      , "波形表示"    }}},
-  (const mi_language_t      []){{ def::menu_category_t::menu_system,200,  2  , { "Language"       , "言語"        }}},
-  (const mi_tree_t          []){{ def::menu_category_t::menu_system,201,  2  , { "Volume"         , "音量"        }}},
-  (const mi_vol_midi_t      []){{ def::menu_category_t::menu_system,202,   3 , { "MIDI Mastervol" , "MIDIマスター音量"}}},
-  (const mi_vol_adcmic_t    []){{ def::menu_category_t::menu_system,203,   3 , { "ADC MicAmp"     , "ADCマイクアンプ" }}},
-  (const mi_all_reset_t     []){{ def::menu_category_t::menu_system,204,  2  , { "Reset All Settings", "全設定リセット"    }}},
-  (const mi_manual_qr_t     []){{ def::menu_category_t::menu_system,205, 1   , { "Manual QR"      , "説明書QR"     }}},
+//(const mi_ble_midi_t      []){{ def::menu_category_t::menu_system,193,   3 , { "#CC Assignment" , "#CC割当"     }}},
+  (const mi_imu_velocity_t  []){{ def::menu_category_t::menu_system,193,  2  , { "IMU Velocity"   , "IMUベロシティ"}}},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system,194,  2  , { "Display"        , "表示"        }}},
+  (const mi_lcd_backlight_t []){{ def::menu_category_t::menu_system,195,   3 , { "Backlight"      , "画面の輝度"  }}},
+  (const mi_led_brightness_t[]){{ def::menu_category_t::menu_system,196,   3 , { "LED Brightness" , "LEDの輝度"   }}},
+  (const mi_detail_view_t   []){{ def::menu_category_t::menu_system,197,   3 , { "Detail View"    , "詳細表示"    }}},
+  (const mi_wave_view_t     []){{ def::menu_category_t::menu_system,198,   3 , { "Wave View"      , "波形表示"    }}},
+  (const mi_language_t      []){{ def::menu_category_t::menu_system,199,  2  , { "Language"       , "言語"        }}},
+  (const mi_tree_t          []){{ def::menu_category_t::menu_system,200,  2  , { "Volume"         , "音量"        }}},
+  (const mi_vol_midi_t      []){{ def::menu_category_t::menu_system,201,   3 , { "MIDI Mastervol" , "MIDIマスター音量"}}},
+  (const mi_vol_adcmic_t    []){{ def::menu_category_t::menu_system,202,   3 , { "ADC MicAmp"     , "ADCマイクアンプ" }}},
+  (const mi_all_reset_t     []){{ def::menu_category_t::menu_system,203,  2  , { "Reset All Settings", "全設定リセット"    }}},
+  (const mi_manual_qr_t     []){{ def::menu_category_t::menu_system,204, 1   , { "Manual QR"      , "説明書QR"     }}},
   nullptr, // end of menu
 };
 // const size_t menu_system_size = sizeof(menu_system) / sizeof(menu_system[0]) - 1;
