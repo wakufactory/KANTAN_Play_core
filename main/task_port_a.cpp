@@ -41,7 +41,7 @@ void task_port_a_t::task_func(task_port_a_t* me)
     ++loop_counter;
     uint32_t button_state = 0;
     for (size_t group_index = 0; group_index < groups_number; ++group_index) {
-      vTaskDelay(1);
+      M5.delay(1);
       auto device_array = groups[group_index];
 
       uint32_t bitmask = 0;
@@ -60,7 +60,7 @@ void task_port_a_t::task_func(task_port_a_t* me)
         device = device_array[++j];
       } while (device != nullptr);
       button_state |= bitmask << (group_index * 8);
-      system_registry.external_input.set8(system_registry.external_input.BUTTON_BITMASK + group_index, button_state >> (group_index * 8));
+      system_registry.external_input.setPortABitmask8(group_index, button_state >> (group_index * 8));
     }
   }
 }

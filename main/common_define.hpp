@@ -624,7 +624,7 @@ Button Index mapping
       { master_key_ud, -1}, { master_key_ud,  1 }, // ENC3_DOWN, ENC3_UP
     };
 
-    // 外部デバイス用のボタン-コマンドマッピング
+    // Port A デバイス用のボタン-コマンドマッピング
     static constexpr const command_param_array_t command_mapping_external_table[] = {
       { chord_degree, 1}, { chord_degree, 2 }, { chord_degree, 3 }, { chord_degree    , 4 },
       { chord_degree, 5}, { chord_degree, 6 }, { chord_degree, 7 }, { chord_minor_swap, 1 },
@@ -637,6 +637,11 @@ Button Index mapping
 
       { none }, { none }, { none }, { none },
       { none }, { none }, { none }, { none },
+    };
+
+    // Port B デバイス用のボタン-コマンドマッピング
+    static constexpr const command_param_array_t command_mapping_port_b_table[] = {
+      { chord_degree, 1}, { chord_degree, 2 },
     };
   };
 
@@ -691,6 +696,7 @@ Button Index mapping
     static constexpr const uint8_t task_priority_i2s = 5;        // I2Sは後回しになると音が途切れる恐れがあり最も問題となるので優先度を一番高くしておく。一回当たりの処理時間は短いのでCPU負荷は低い
     static constexpr const uint8_t task_priority_i2c = 3;        // I2Cはかんぷれ本体の入力操作への応答に影響するので優先度は標準より上げておく
     static constexpr const uint8_t task_priority_port_a = 2;     // 外部ポートAの処理は拡張機能を使用する際に演奏入力に使用されるため i2c側と同じにしておく
+    static constexpr const uint8_t task_priority_port_b = 2;     // 外部ポートB
     static constexpr const uint8_t task_priority_commander = 2;  // コマンド指示タスクは演奏に関連するので優先度を標準より上げておく
     static constexpr const uint8_t task_priority_operator = 2;   // コマンド処理タスクは commander と同格にしておく
     static constexpr const uint8_t task_priority_kantanplay = 2; // かんぷれの演奏指示処理はタイミングコントロールが重要なのでmidiと同格にしておく
@@ -709,6 +715,7 @@ Button Index mapping
     static constexpr const uint8_t task_cpu_operator = 1;
     static constexpr const uint8_t task_cpu_kantanplay = 1;
     static constexpr const uint8_t task_cpu_port_a = 0;
+    static constexpr const uint8_t task_cpu_port_b = 0;
 
     static constexpr const uint8_t internal_firmware_version = 4;   // かんぷれハードウェア内部STM32ファームウェアバージョン
   };
@@ -747,7 +754,7 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 1;
-    static constexpr const uint32_t app_version_patch = 3;
+    static constexpr const uint32_t app_version_patch = 4;
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
@@ -995,6 +1002,7 @@ Button Index mapping
     static constexpr const uint8_t max_button_mask = 32;
     static constexpr const uint8_t max_main_button = 15;
     static constexpr const uint8_t max_sub_button = 4;
+    static constexpr const uint8_t max_port_b_pins = 2;
 
     namespace pin {
 #if defined (CONFIG_IDF_TARGET_ESP32S3)

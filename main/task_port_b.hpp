@@ -1,0 +1,20 @@
+#ifndef KANPLAY_TASK_PORT_B_HPP
+#define KANPLAY_TASK_PORT_B_HPP
+
+/*
+task_port_b は 外部ポートB (主にGPIO用途)を使用するタスクです。
+*/
+
+namespace kanplay_ns {
+//-------------------------------------------------------------------------
+class task_port_b_t {
+public:
+    bool start(void);
+private:
+    static void task_func(task_port_b_t* me);
+};
+
+//-------------------------------------------------------------------------
+}; // namespace kanplay_ns
+
+#endif

@@ -371,12 +371,23 @@ protected:
     };
 
     struct reg_external_input_t : public registry_t {
-        reg_external_input_t(void) : registry_t(16, 16, DATA_SIZE_32) {}
+        reg_external_input_t(void) : registry_t(8, 8, DATA_SIZE_32) {}
         enum index_t : uint16_t {
-            BUTTON_BITMASK = 0x00,
+            PORTA_BITMASK_BYTE0 = 0x00,
+            PORTA_BITMASK_BYTE1 = 0x01,
+            PORTA_BITMASK_BYTE2 = 0x02,
+            PORTA_BITMASK_BYTE3 = 0x03,
+            PORTB_BITMASK_BYTE0 = 0x04,
+            PORTB_BITMASK_BYTE1 = 0x05,
+            PORTB_BITMASK_BYTE2 = 0x06,
+            PORTB_BITMASK_BYTE3 = 0x07,
         };
-        void setButtonBitmask(uint32_t bitmask) { set32(BUTTON_BITMASK, bitmask); }
-        uint32_t getButtonBitmask(void) const { return get32(BUTTON_BITMASK); }
+        void setPortABitmask8(uint8_t index, uint8_t bitmask) { set8(PORTA_BITMASK_BYTE0 + index, bitmask); }
+        void setPortBValue8(uint8_t index, uint8_t bitmask) { set8(PORTB_BITMASK_BYTE0 + index, bitmask); }
+        uint8_t getPortBValue8(uint8_t index) const { return get8(PORTB_BITMASK_BYTE0 + index); }
+
+        uint32_t getPortAButtonBitmask(void) const { return get32(PORTA_BITMASK_BYTE0); }
+        uint32_t getPortBButtonBitmask(void) const { return get32(PORTB_BITMASK_BYTE0); }
     };
 
     struct reg_internal_imu_t : public registry_t {
@@ -1040,6 +1051,7 @@ protected:
 
     reg_command_mapping_t command_mapping_current { def::hw::max_button_mask };      // 現在のボタンマッピングテーブル
     reg_command_mapping_t command_mapping_external { def::hw::max_button_mask };     // 外部機器ボタンのマッピングテーブル
+    reg_command_mapping_t command_mapping_port_b { 4 };     // 外部機器ボタンのマッピングテーブル
     reg_midi_command_mapping_t command_mapping_midinote;    // MIDIコマンドマッピングテーブル
 
     reg_command_mapping_t command_mapping_custom_main { def::hw::max_button_mask };  // メインボタンの割当カスタマイズテーブル

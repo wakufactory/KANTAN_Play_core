@@ -8,6 +8,7 @@
 #include "task_midi.hpp"
 #include "task_wifi.hpp"
 #include "task_port_a.hpp"
+#include "task_port_b.hpp"
 #include "task_operator.hpp"
 #include "task_commander.hpp"
 #include "task_kantanplay.hpp"
@@ -19,6 +20,7 @@ static kanplay_ns::task_i2s_t task_i2s;
 static kanplay_ns::task_midi_t task_midi;
 static kanplay_ns::task_wifi_t task_wifi;
 static kanplay_ns::task_port_a_t task_port_a;
+static kanplay_ns::task_port_b_t task_port_b;
 static kanplay_ns::task_operator_t task_operator;
 static kanplay_ns::task_commander_t task_commander;
 static kanplay_ns::task_kantanplay_t task_kantanplay;
@@ -62,18 +64,17 @@ void setup() {
   }
   log_memory(5); M5.delay(16); M5.Display.print("."); task_midi.start();
   log_memory(6); M5.delay(16); M5.Display.print("."); task_wifi.start();
-#if 1 // DEBUG
   log_memory(7); M5.delay(16); M5.Display.print("."); task_port_a.start();
-#endif
-  log_memory(8); M5.delay(16); M5.Display.print("."); task_operator.start();
-  log_memory(9); M5.delay(16); M5.Display.print("."); task_kantanplay.start();
+  log_memory(8); M5.delay(16); M5.Display.print("."); task_port_b.start();
+  log_memory(9); M5.delay(16); M5.Display.print("."); task_operator.start();
+  log_memory(10); M5.delay(16); M5.Display.print("."); task_kantanplay.start();
 
   kanplay_ns::system_registry.internal_input.setButtonBitmask(0x00);
   kanplay_ns::system_registry.operator_command.addQueue( { kanplay_ns::def::command::slot_select, 1 } );
   kanplay_ns::system_registry.operator_command.addQueue( { kanplay_ns::def::command::file_index_set, 0 } );
 
-  log_memory(9); M5.delay(16); M5.Display.print("."); task_commander.start();
-  log_memory(10); M5.delay(16); M5.Display.print("."); task_spi.start();
+  log_memory(11); M5.delay(16); M5.Display.print("."); task_commander.start();
+  log_memory(12); M5.delay(16); M5.Display.print("."); task_spi.start();
 
   { // 起動直後のファイルを読込
     kanplay_ns::def::app::file_command_info_t songinfo;

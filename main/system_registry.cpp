@@ -99,6 +99,7 @@ void system_registry_t::init(void)
   external_input.init();
   command_mapping_current.init();
   command_mapping_external.init();
+  command_mapping_port_b.init();
   command_mapping_midinote.init();
   drum_mapping.init();
   file_command.init();
@@ -199,6 +200,11 @@ void system_registry_t::reset(void)
   command_mapping_external.reset();
   for (int i = 0; i < def::hw::max_button_mask; ++i) {
     command_mapping_external.setCommandParamArray(i, def::command::command_mapping_external_table[i]);
+  }
+
+  command_mapping_port_b.reset();
+  for (int i = 0; i < def::hw::max_port_b_pins; ++i) {
+    command_mapping_port_b.setCommandParamArray(i, def::command::command_mapping_port_b_table[i]);
   }
 
   command_mapping_midinote.reset();

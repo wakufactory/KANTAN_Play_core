@@ -10,28 +10,119 @@ namespace kanplay_ns {
 
 class commander_t {
   // チャタリング防止のための前回ボタンを押したタイミングの記録
-  // 対象とするボタンはRGB LEDが対応している19個のボタンのみ
-  uint32_t _chattering_prev_msec[def::hw::max_rgb_led];
+  uint32_t _chattering_prev_msec[def::hw::max_button_mask];
 
   // ボタンを押した時に発動したコマンドを記憶するためのキャッシュ
   def::command::command_param_array_t _pressed_command_cache[def::hw::max_button_mask];
   uint32_t _prev_bitmask;
 
   // チャタリング防止処理を行う対象のボタンのビットマスク
-  uint32_t _chattering_target_bitmask;
+  const uint32_t _chattering_target_bitmask;
+  const uint8_t _bitlength = 1; // ボタンひとつあたりのビット数 (通常は 1。 アナログ扱いの PortB は 8bitとする) 
+  const bool _use_internal_imu = false;
 
-  bool _use_internal_imu = false;
 public:
-  void start(bool use_internal_imu, uint32_t chattering_target_bitmask)
+
+  commander_t(uint8_t bitlen, bool use_internal_imu, uint32_t chattering_bitmask)
+  : _chattering_target_bitmask { chattering_bitmask }
+  , _bitlength { bitlen }
+  , _use_internal_imu { use_internal_imu }
+  {}
+
+  void start(void)
   {
-    _chattering_target_bitmask = chattering_target_bitmask;
-    _use_internal_imu = use_internal_imu;
     memset(_chattering_prev_msec, 0, sizeof(_chattering_prev_msec));
     memset(_pressed_command_cache, 0, sizeof(_pressed_command_cache));
     _prev_bitmask = 0;
   }
 
-  uint32_t update(uint32_t btn_bitmask, uint32_t msec, system_registry_t::reg_command_mapping_t* command_mapping)
+  uint32_t update(uint32_t raw_value, uint32_t msec, system_registry_t::reg_command_mapping_t* command_mapping)
+  {
+    uint32_t delay_msec = 0xffffffffUL;
+    if (_prev_bitmask == raw_value) { return delay_msec; }
+
+    uint8_t chattering_threshold_msec = system_registry.user_setting.getChatteringThreshold();
+    bool imu_requested = false;
+    uint8_t imu_level = system_registry.user_setting.getImuVelocityLevel();
+    static constexpr const uint8_t imu_ratio_table[] = { 0, 127, 255 };
+    static constexpr const uint8_t imu_base_table[] = { 127, 63, 0 };
+    if (imu_level >= sizeof(imu_ratio_table) / sizeof(imu_ratio_table[0])) { imu_level = 0; }
+    uint8_t imu_ratio = imu_ratio_table[imu_level];
+    uint8_t imu_base = imu_base_table[imu_level];
+
+    // 前回のボタン状態との差分を取得
+    uint32_t xor_bitmask = _prev_bitmask ^ raw_value;
+    _prev_bitmask = raw_value;
+
+    uint32_t mask_single = 1 << (_bitlength - 1);
+    uint32_t mask_all  = (1 << _bitlength) - 1;
+    uint32_t shift_value = raw_value;
+    for (int i = 0; xor_bitmask; ++i, xor_bitmask >>= _bitlength, shift_value >>= _bitlength) {
+      // 変化がない箇所はスキップ
+      if (0 == (xor_bitmask & mask_all)) { continue; }
+
+      bool pressed = shift_value & mask_single;
+
+      // チャタリング防止判定
+      if (_chattering_target_bitmask & (1 << i)) {
+        if (pressed) {
+          // 押したタイミングを記録しておく
+          _chattering_prev_msec[i] = msec;
+        } else {
+          int32_t diff = msec - _chattering_prev_msec[i];
+          diff = chattering_threshold_msec - diff;
+
+          if (0 < diff) {
+            // 押してから離すまでの時間が短すぎる場合はチャタリングの可能性を考慮して、まだ押したままという扱いにする
+            _prev_bitmask |= mask_single << (i * _bitlength);
+            // 次回のdelay終了タイミングがチャタリング判定期間の終了タイミングになるよう設定
+            if (delay_msec > diff) {
+              delay_msec = diff;
+            }
+            continue;
+          }
+        }
+      }
+
+      def::command::command_param_array_t command_param_array;
+      if (pressed) { // ボタンを押したときのコマンドセットを記憶しておく
+        command_param_array = command_mapping->getCommandParamArray(i);
+        _pressed_command_cache[i] = command_param_array;
+        if (!imu_requested) {
+          // 演奏に関連するボタンを押したときIMUベロシティを反映する
+          switch (command_param_array.array[0].command) {
+          default: break;
+          case def::command::chord_degree:
+          case def::command::note_button:
+          case def::command::drum_button:
+            imu_requested = true;
+            int velocity = imu_base;
+            if (_use_internal_imu && imu_ratio) {
+              uint32_t imu_sd = system_registry.internal_imu.getImuStandardDeviation();
+              velocity += sqrtf(sqrtf(imu_sd)) * imu_ratio / 100;
+              if (velocity < 1) { velocity = 1; }
+              if (velocity > 255) { velocity = 255; }
+            }
+            system_registry.operator_command.addQueue( { def::command::set_velocity, velocity } );
+            break;
+          }
+        }
+      } else {
+        // 離した時は前回押したときのコマンドセットを取得する。
+        // こうする理由はコマンドマッピングが変更されても、押した時と離したときの整合性が取れるようにするため
+        command_param_array = _pressed_command_cache[i];
+      }
+      for (auto command_param : command_param_array.array) {
+// M5_LOGV("command_param:%04x", command_param.raw);
+        uint8_t command = command_param.getCommand();
+        if (command == 0) { continue; }
+        system_registry.operator_command.addQueue(command_param, pressed);
+      }
+    }
+    return delay_msec;
+  }
+#if 0
+  uint32_t update_bitmask(uint32_t btn_bitmask, uint32_t msec, system_registry_t::reg_command_mapping_t* command_mapping)
   {
     uint32_t delay_msec = 0xffffffffUL;
     if (_prev_bitmask == btn_bitmask) { return delay_msec; }
@@ -76,8 +167,7 @@ public:
           }
         }
       }
-      // コマンドマッピング表にあるコマンドを発動する
-      // (コマンドは1Byte+データ1Byteの計2Byteだが１ボタンに最大2個のコマンドが登録でき4Byteとなる)
+
       def::command::command_param_array_t command_param_array;
       if (pressed) { // ボタンを押したときのコマンドセットを記憶しておく
         command_param_array = command_mapping->getCommandParamArray(i);
@@ -115,10 +205,70 @@ public:
     }
     return delay_msec;
   }
+
+
+  uint32_t update_analog(uint32_t analog_values, uint32_t msec, system_registry_t::reg_command_mapping_t* command_mapping)
+  {
+    uint32_t delay_msec = 0xffffffffUL;
+    if (_prev_bitmask == analog_values) { return delay_msec; }
+
+    // 前回のボタン状態との差分を取得
+    uint32_t xor_bitmask = _prev_bitmask ^ analog_values;
+    _prev_bitmask = analog_values;
+
+    for (int i = 0; xor_bitmask; ++i, xor_bitmask >>= 8) {
+      uint8_t velocity = analog_values;
+      analog_values >>= 8;
+
+      bool modified = xor_bitmask & 0xFF;
+      // 変化がない箇所はスキップ
+      if (!modified) { continue; }
+      bool pressed = velocity >= 64;
+
+      // コマンドマッピング表にあるコマンドを発動する
+      // (コマンドは1Byte+データ1Byteの計2Byteだが１ボタンに最大2個のコマンドが登録でき4Byteとなる)
+      def::command::command_param_array_t command_param_array;
+      if (pressed) { // ボタンを押したときのコマンドセットを記憶しておく
+        command_param_array = command_mapping->getCommandParamArray(i);
+        _pressed_command_cache[i] = command_param_array;
+        {
+          // 演奏に関連するボタンを押したときIMUベロシティを反映する
+          switch (command_param_array.array[0].command) {
+          default: break;
+          case def::command::chord_degree:
+          case def::command::note_button:
+          case def::command::drum_button:
+            system_registry.operator_command.addQueue( { def::command::set_velocity, velocity } );
+            break;
+          }
+        }
+      } else {
+        // 離した時は前回押したときのコマンドセットを取得する。
+        // こうする理由はコマンドマッピングが変更されても、押した時と離したときの整合性が取れるようにするため
+        command_param_array = _pressed_command_cache[i];
+      }
+      for (auto command_param : command_param_array.array) {
+// M5_LOGV("command_param:%04x", command_param.raw);
+        uint8_t command = command_param.getCommand();
+        if (command == 0) { continue; }
+        system_registry.operator_command.addQueue(command_param, pressed);
+      }
+    }
+    return delay_msec;
+  }
+#endif
 };
+
+static commander_t commander_internal { 1, true , (1 << def::hw::max_rgb_led) - 1};
+static commander_t commander_port_a   { 1, false, ~0u };
+static commander_t commander_port_b   { 8, false, ~0u };
 
 void task_commander_t::start(void)
 {
+  commander_internal.start();
+  commander_port_a.start();
+  commander_port_b.start();
+
 #if defined (M5UNIFIED_PC_BUILD)
   // 
   static constexpr const SDL_KeyCode keymap[] = {
@@ -138,7 +288,7 @@ void task_commander_t::start(void)
   auto thread = SDL_CreateThread((SDL_ThreadFunction)task_func, "command", this);
 #else
   TaskHandle_t handle = nullptr;
-  xTaskCreatePinnedToCore((TaskFunction_t)task_func, "command", 1024*3, this, def::system::task_priority_commander, &handle, def::system::task_cpu_commander);
+  xTaskCreatePinnedToCore((TaskFunction_t)task_func, "command", 1024 * 3, this, def::system::task_priority_commander, &handle, def::system::task_cpu_commander);
   system_registry.internal_input.setNotifyTaskHandle(handle);
   system_registry.external_input.setNotifyTaskHandle(handle);
 #endif
@@ -146,12 +296,6 @@ void task_commander_t::start(void)
 
 void task_commander_t::task_func(task_commander_t* me)
 {
-  commander_t commander_internal;
-  commander_t commander_external;
-
-  commander_internal.start(true, (1 << def::hw::max_rgb_led) - 1);
-  commander_external.start(false, ~0u);
-
   uint32_t delay_msec = 0;
 
   system_registry.popup_qr.setQRCodeType(def::qrcode_type_t::QRCODE_URL_MANUAL);
@@ -200,19 +344,33 @@ void task_commander_t::task_func(task_commander_t* me)
         delay_msec = result;
       }
     }
-    hit = false;
+
+    bool hit_a = false, hit_b = false;
     while (nullptr != (history = system_registry.external_input.getHistory(me->_external_input_history_code)))
     {
-      hit = true;
-      if (history->index == system_registry_t::reg_external_input_t::BUTTON_BITMASK) {
-        auto result = commander_external.update(history->value, M5.millis(), &system_registry.command_mapping_external);
+      if (history->index == system_registry_t::reg_external_input_t::PORTA_BITMASK_BYTE0) {
+        hit_a = true;
+        auto result = commander_port_a.update(history->value, M5.millis(), &system_registry.command_mapping_external);
+        if (delay_msec > result) {
+          delay_msec = result;
+        }
+      } else
+      if (history->index == system_registry_t::reg_external_input_t::PORTB_BITMASK_BYTE0) {
+        hit_b = true;
+        auto result = commander_port_b.update(history->value, M5.millis(), &system_registry.command_mapping_port_b);
         if (delay_msec > result) {
           delay_msec = result;
         }
       }
     }
-    if (hit == 0) { // 履歴がない場合は読み取って処理を行う (チャタリング回避のための遅延処理があり得るため)
-      auto result = commander_external.update(system_registry.external_input.getButtonBitmask(), M5.millis(), &system_registry.command_mapping_external);
+    if (hit_a == false) { // 履歴がない場合は読み取って処理を行う (チャタリング回避のための遅延処理があり得るため)
+      auto result = commander_port_a.update(system_registry.external_input.getPortAButtonBitmask(), M5.millis(), &system_registry.command_mapping_external);
+      if (delay_msec > result) {
+        delay_msec = result;
+      }
+    }
+    if (hit_b == false) {
+      auto result = commander_port_b.update(system_registry.external_input.getPortBButtonBitmask(), M5.millis(), &system_registry.command_mapping_port_b);
       if (delay_msec > result) {
         delay_msec = result;
       }
