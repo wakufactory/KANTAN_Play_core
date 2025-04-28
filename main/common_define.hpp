@@ -293,6 +293,7 @@ Button Index mapping
       mapping_switch,
       master_vol_ud, master_vol_set,
       master_key_ud, master_key_set,
+      chord_step_advance,       // 1=onbeat / 2=offbeat
       chord_step_reset_request, // 演奏ステップを次回オンビートのタイミングで先頭に戻す
       power_control,
       file_index_ud, file_index_set,
@@ -754,7 +755,7 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 1;
-    static constexpr const uint32_t app_version_patch = 4;
+    static constexpr const uint32_t app_version_patch = 5;
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";

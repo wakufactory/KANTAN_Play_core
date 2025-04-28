@@ -13,15 +13,20 @@ private:
   static void task_func(task_kantanplay_t* me);
   bool commandProccessor(void);
 
+
+  void chordStepAdvance(const bool on_beat);
+
+
   void chordStep(bool on_beat);
   void chordPlay(bool on_beat);
-  void chordStepSet(int step);
+  void chordStepReset(void);
   void chordNoteOff(int part);
   uint32_t chordProc(void);
   void procSoundEffect(const def::command::command_param_t& command_param, const bool is_pressed);
   void procChordDegree(const def::command::command_param_t& command_param, const bool is_pressed);
   void procNoteButton(const def::command::command_param_t& command_param, const bool is_pressed);
   void procDrumButton(const def::command::command_param_t& command_param, const bool is_pressed);
+  void procChordStepAdvance(const def::command::command_param_t& command_param, const bool is_pressed);
   void procChordStepResetRequest(const def::command::command_param_t& command_param, const bool is_pressed);
 
   void setPitchManage(uint8_t part, uint8_t pitch, uint8_t midi_ch, uint8_t note_number, int8_t velocity, int32_t press_usec, int32_t release_usec);

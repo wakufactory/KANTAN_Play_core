@@ -14,12 +14,6 @@ void task_kantanplay_t::start(void)
 {
   memset(_midi_pitch_manage, 0xFF, sizeof(_midi_pitch_manage));
 
-  // MIDIチャンネルの初期値設定 (暫定本来はスロット設定から取得する)
-  // for (int i = 0; i < 16; ++i) {
-  //   system_registry.midi_out_control.set8(system_registry_t::reg_midi_out_control_t::MIDI_CONTROL_VOLUME_CH1 + i, 100);
-  //   // system_registry.midi_out_control.set8(system_registry_t::reg_midi_out_control_t::MIDI_CONTROL_PROGRAM_CH1 + i, 0);
-  // }
-
   _current_usec = M5.micros();
 
 #if defined (M5UNIFIED_PC_BUILD)
@@ -88,6 +82,9 @@ bool task_kantanplay_t::commandProccessor(void)
       break;
     case def::command::drum_button:
       procDrumButton(command_param, is_pressed);
+      break;
+    case def::command::chord_step_advance:
+      procChordStepAdvance(command_param, is_pressed);
       break;
     case def::command::chord_step_reset_request:
       procChordStepResetRequest(command_param, is_pressed);
@@ -332,7 +329,23 @@ M5_LOGV("looping_msec: %d, onbeat_msec: %d  bpm:%d", looping_usec / 1000, onbeat
   }
 }
 
+void task_kantanplay_t::procChordStepAdvance(const def::command::command_param_t& command_param, const bool is_pressed)
+{
+  if (!is_pressed) { return; }
+
+  if (command_param.getParam() == 1)
+  {
+    chordStep(true);
+  }
+
+}
+
 void task_kantanplay_t::procChordStepResetRequest(const def::command::command_param_t& command_param, const bool is_pressed)
+{
+  chordStepReset();
+}
+
+void task_kantanplay_t::chordStepReset(void)
 {
   if (_is_on_beat) {
     _step_reset_request = true;
@@ -343,17 +356,13 @@ void task_kantanplay_t::procChordStepResetRequest(const def::command::command_pa
       if (banlift < system_registry.chord_play.getPartStep(i))
       {
         system_registry.chord_play.setPartStep(i, 0);
+        if (!system_registry.chord_play.getPartNextEnable(i)) {
+          system_registry.chord_play.setPartEnable(i, false);
+          chordNoteOff(i);
+        }
       }
     }
   }
-}
-
-void task_kantanplay_t::chordStepSet(int step)
-{
-  // if (step <= 0) { _step_reset_request = false; }
-  // for (int i = 0; i < def::app::max_chord_part; ++i) {
-  //   system_registry.chord_play.setPartStep(i, step);
-  // }
 }
 
 void task_kantanplay_t::chordStep(bool on_beat)
@@ -620,9 +629,7 @@ uint32_t task_kantanplay_t::chordProc(void)
       _arpeggio_reset_remain_usec -= progress_usec;
       if (_arpeggio_reset_remain_usec <= 0) {
         _arpeggio_reset_remain_usec = -1;
-        for (int i = 0; i < def::app::max_chord_part; ++i) {
-          system_registry.chord_play.setPartStep(i, 0);
-        }
+        chordStepReset();
       } else {
         if (next_event_timing > _arpeggio_reset_remain_usec) {
           next_event_timing = _arpeggio_reset_remain_usec;
