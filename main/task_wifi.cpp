@@ -666,7 +666,7 @@ static esp_err_t response_ws_handler(httpd_req_t *req)
       return ret;
     }
     // M5_LOGI("Got packet with message: %s", ws_pkt.payload);
-    auto data = ws_pkt.payload;
+    // auto data = ws_pkt.payload;
     if (memcmp(buf, "cmd=", 4) == 0) {
       bool press = (buf[4] == 'p');
       def::command::command_param_t cmd;

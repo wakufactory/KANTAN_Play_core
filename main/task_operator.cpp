@@ -286,7 +286,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
   case def::command::chord_degree:
   case def::command::note_button:
   case def::command::drum_button:
-  case def::command::chord_step_advance:
+  case def::command::chord_beat:
   case def::command::chord_step_reset_request:
   case def::command::autoplay_toggle:
     system_registry.player_command.addQueue(command_param, is_pressed);
@@ -945,7 +945,7 @@ void task_operator_t::procChordBaseDegree(const def::command::command_param_t& c
   }
   base_degree = _base_degree_press_order[0];
 
-  system_registry.chord_play.setChordBaseDegree(base_degree);
+  system_registry.chord_play.setChordBassDegree(base_degree);
 }
 
 void task_operator_t::procChordBaseSemitone(const def::command::command_param_t& command_param, const bool is_pressed)
@@ -954,7 +954,7 @@ void task_operator_t::procChordBaseSemitone(const def::command::command_param_t&
   int value = 0;
   if (system_registry.working_command.check( { def::command::chord_bass_semitone, 1 } )) { --value; }
   if (system_registry.working_command.check( { def::command::chord_bass_semitone, 2 } )) { ++value; }
-  system_registry.chord_play.setChordBaseSemitone(value);
+  system_registry.chord_play.setChordBassSemitone(value);
 }
 
 // スロット番号設定操作

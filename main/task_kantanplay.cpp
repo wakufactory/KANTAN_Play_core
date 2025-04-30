@@ -28,14 +28,13 @@ void task_kantanplay_t::start(void)
 void task_kantanplay_t::task_func(task_kantanplay_t* me)
 {
   for (;;) {
-    me->_prev_usec = me->_current_usec;
-    me->_current_usec = M5.micros();
-
-    int32_t next_usec = me->chordProc();
-    if (me->commandProccessor()) {
+    uint32_t next_usec;
+    do {
       me->_prev_usec = me->_current_usec;
-      next_usec = me->chordProc();
-    }
+      me->_current_usec = M5.micros();
+      next_usec = std::min(me->autoProc(), me->chordProc());
+    } while (me->commandProccessor());
+
 #if !defined (M5UNIFIED_PC_BUILD)
     taskYIELD();
 #endif
@@ -54,81 +53,663 @@ void task_kantanplay_t::task_func(task_kantanplay_t* me)
 
 bool task_kantanplay_t::commandProccessor(void)
 {
-  bool res = false;
   def::command::command_param_t command_param;
   bool is_pressed;
-  while (system_registry.player_command.getQueue(&_player_command_history_code, &command_param, &is_pressed))
-  {
-    res = true;
-    switch (command_param.getCommand()) {
-    default:
-      break;
-    case def::command::set_velocity:
-      if (is_pressed)
-      {
-        const auto param = command_param.getParam();
-        system_registry.runtime_info.setPressVelocity(param);
-        _press_velocity = param;
-      }
-      break;
-    case def::command::sound_effect:
-      procSoundEffect(command_param, is_pressed);
-      break;
-    case def::command::chord_degree:
-      procChordDegree(command_param, is_pressed);
-      break;
-    case def::command::note_button:
-      procNoteButton(command_param, is_pressed);
-      break;
-    case def::command::drum_button:
-      procDrumButton(command_param, is_pressed);
-      break;
-    case def::command::chord_step_advance:
-      procChordStepAdvance(command_param, is_pressed);
-      break;
-    case def::command::chord_step_reset_request:
-      procChordStepResetRequest(command_param, is_pressed);
-      break;
+  if (false == system_registry.player_command.getQueue(&_player_command_history_code, &command_param, &is_pressed))
+  { return false; }
 
-    case def::command::autoplay_toggle:
-      if (is_pressed)
-      { // 自動演奏モードのオン・オフのトグル
-        auto autoplay = system_registry.runtime_info.getChordAutoplayState();
-        if (autoplay == def::play::auto_play_mode_t::auto_play_none) {
-          autoplay = def::play::auto_play_mode_t::auto_play_waiting;
-  // M5_LOGV("looping_msec: %d, onbeat_msec: %d  bpm:%d", looping_usec / 1000, onbeat_usec / 1000, 60000000 / looping_usec);
-        } else {
-          autoplay = def::play::auto_play_mode_t::auto_play_none;
-        }
-     // M5_LOGV("autoplay %d", (int)autoplay);
-        system_registry.runtime_info.setChordAutoplayState(autoplay);
-      }
-      break;
+  switch (command_param.getCommand()) {
+  default:
+    break;
+  case def::command::set_velocity:
+    if (is_pressed)
+    {
+      const auto param = command_param.getParam();
+      system_registry.runtime_info.setPressVelocity(param);
+      _press_velocity = param;
     }
+    break;
+  case def::command::sound_effect:
+    procSoundEffect(command_param, is_pressed);
+    break;
+  case def::command::chord_degree:
+    procChordDegree(command_param, is_pressed);
+    break;
+  case def::command::note_button:
+    procNoteButton(command_param, is_pressed);
+    break;
+  case def::command::drum_button:
+    procDrumButton(command_param, is_pressed);
+    break;
+  case def::command::chord_beat:
+    procChordBeat(command_param, is_pressed);
+    break;
+  case def::command::chord_step_reset_request:
+    procChordStepResetRequest(command_param, is_pressed);
+    break;
+
+  case def::command::autoplay_toggle:
+    if (is_pressed)
+    { // 自動演奏モードのオン・オフのトグル
+      auto autoplay = system_registry.runtime_info.getChordAutoplayState();
+      if (autoplay == def::play::auto_play_mode_t::auto_play_none) {
+        autoplay = def::play::auto_play_mode_t::auto_play_waiting;
+// M5_LOGV("looping_msec: %d, onbeat_msec: %d  bpm:%d", looping_usec / 1000, onbeat_usec / 1000, 60000000 / looping_usec);
+      } else {
+        autoplay = def::play::auto_play_mode_t::auto_play_none;
+      }
+    // M5_LOGV("autoplay %d", (int)autoplay);
+      system_registry.runtime_info.setChordAutoplayState(autoplay);
+    }
+    break;
   }
-  return res;
+
+  return true;
 }
 
-void task_kantanplay_t::updateTempoSwing(void)
+// オートプレイ処理
+uint32_t task_kantanplay_t::autoProc(void)
+{
+  uint32_t next_event_timing = INT32_MAX;
+  const int progress_usec = (int32_t)(_current_usec - _prev_usec);
+
+  // 自動演奏 (ウラ拍) タイミング判定
+  if (_auto_play_offbeat_remain_usec >= 0) {
+    int remain_usec = _auto_play_offbeat_remain_usec - progress_usec;
+    if (remain_usec < 0) {
+      const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
+      if (_current_beat_index < step_per_beat - 1) {
+        remain_usec += _auto_play_offbeat_cycle_usec[1 & _current_beat_index];
+      }
+      // オフビートの演奏を行う
+      chordBeat(false);
+    }
+    _auto_play_offbeat_remain_usec = remain_usec;
+    if (next_event_timing > remain_usec) {
+      next_event_timing = remain_usec;
+    }
+  }
+
+  // 自動演奏 (オモテ拍) タイミング判定
+  if (_auto_play_onbeat_remain_usec >= 0) {
+    int remain_usec = _auto_play_onbeat_remain_usec - progress_usec;
+    if (remain_usec < 0) {
+      auto auto_play = system_registry.runtime_info.getChordAutoplayState();
+      if (auto_play == def::play::auto_play_mode_t::auto_play_running)
+      {
+        auto onbeat_cycle_usec = getOnbeatCycleBySongTempo();
+
+        // 曲のテンポ情報に基づいてオンビートのサイクルを更新
+        setOnbeatCycle(onbeat_cycle_usec);
+
+        updateOffbeatTiming();
+
+        // 次回オフビートのタイミングを次回イベントのタイミングに反映する
+        // (これを忘れると運次第でオフビートのタイミングがずれる)
+        if (next_event_timing > _auto_play_offbeat_remain_usec) {
+          next_event_timing = _auto_play_offbeat_remain_usec;
+        }
+    
+        // 次回のオンビート自動演奏までの時間を更新する
+        remain_usec += onbeat_cycle_usec;
+
+        // オンビートの演奏を行う
+        chordBeat(true);
+      }
+    }
+    _auto_play_onbeat_remain_usec = remain_usec;
+    if (next_event_timing > remain_usec) {
+      next_event_timing = remain_usec;
+    }
+  }
+
+  return next_event_timing;
+}
+
+uint32_t task_kantanplay_t::chordProc(void)
+{
+  uint32_t next_event_timing = INT32_MAX;
+  const int progress_usec = (int32_t)(_current_usec - _prev_usec);
+
+  for (int part = 0; part < def::app::max_chord_part; ++part) {
+    bool hit_flg = false;
+    for (int pitch = 0; pitch < def::app::max_pitch_with_drum; ++pitch) {
+      for (int m = 0; m < max_manage_history; ++m) {
+        auto manage = &_midi_pitch_manage[part][pitch][m];
+
+        int press_usec = manage->press_usec;
+        if (press_usec >= 0) {
+          press_usec -= progress_usec;
+          if (press_usec < 0) {
+            auto note_number = manage->note_number;
+            auto midi_ch = manage->midi_ch;
+            auto velocity = manage->velocity;
+            if (velocity) {
+              velocity |= 0x80;
+              system_registry.midi_out_control.setNoteVelocity(midi_ch, note_number, 0);
+              system_registry.midi_out_control.setNoteVelocity(midi_ch, note_number, velocity);
+              hit_flg = true;
+            }
+          } else if (next_event_timing > press_usec) {
+            next_event_timing = press_usec;
+          }
+          manage->press_usec = press_usec;
+        }
+
+        int release_usec = manage->release_usec;
+        if (release_usec >= 0) {
+          release_usec -= progress_usec;
+          if (release_usec < 0) {
+            auto note_number = manage->note_number;
+            auto midi_ch = manage->midi_ch;
+            // 同じノートナンバーの音が他のピッチで鳴っていない場合は音を停止する
+            if (0 == checkOtherPitchNote(part, pitch, midi_ch, note_number)) {
+              system_registry.midi_out_control.setNoteVelocity(manage->midi_ch, manage->note_number, 0);
+            }
+            manage->note_number = 0xFF;
+            manage->velocity = 0;
+          } else if (next_event_timing > release_usec) {
+            next_event_timing = release_usec;
+          }
+          manage->release_usec = release_usec;
+        }
+      }
+    }
+    if (hit_flg) {
+      system_registry.runtime_info.hitPartEffect(part);
+    }
+  }
+
+  // パターン編集モードでない場合
+  if (system_registry.runtime_info.getPlayMode() != def::playmode::playmode_t::chord_edit_mode) {
+    // アルペジエータのタイムアウト判定 (一定時間たつと強制的に先頭に戻す)
+    if (_arpeggio_reset_remain_usec >= 0) {
+      _arpeggio_reset_remain_usec -= progress_usec;
+      if (_arpeggio_reset_remain_usec < 0) {
+        chordStepReset();
+      } else {
+        if (next_event_timing > _arpeggio_reset_remain_usec) {
+          next_event_timing = _arpeggio_reset_remain_usec;
+        }
+      }
+    }
+  }
+
+  return next_event_timing;
+}
+
+// Degree(度数)ボタン操作時の処理
+void task_kantanplay_t::procChordDegree(const def::command::command_param_t& command_param, const bool is_pressed)
+{
+  const uint8_t degree = command_param.getParam();
+
+  int current_degree = system_registry.chord_play.getChordDegree();
+  // 現在のDegreeと異なる場合
+  if (current_degree != degree) {
+    // 別のDegreeのボタンを離した場合は何もしない
+    if (!is_pressed) {
+      return;
+    }
+    system_registry.chord_play.setChordDegree(degree);
+  }
+
+  if (is_pressed) { // Degreeボタンを押したタイミングで次のオモテ拍での演奏オプションをセットしておく
+    _next_option.degree = degree;
+    _next_option.bass_degree = system_registry.chord_play.getChordBassDegree();
+    _next_option.semitone_shift = system_registry.chord_play.getChordSemitone();
+    _next_option.bass_semitone_shift = system_registry.chord_play.getChordBassSemitone();
+    _next_option.minor_swap = system_registry.chord_play.getChordMinorSwap();
+  }
+
+  const auto auto_play = system_registry.runtime_info.getChordAutoplayState();
+  const bool is_auto = auto_play == def::play::auto_play_mode_t::auto_play_running;
+  // オンビート・オフビートそれぞれの自動化判定
+  bool auto_on_beat = is_auto;
+  bool auto_off_beat = is_auto || (system_registry.user_setting.getOffbeatStyle() == def::play::offbeat_style_t::offbeat_auto);
+
+  bool playflag = ((is_pressed && (!auto_on_beat))  // オモテ拍手動
+               || (!is_pressed && !auto_off_beat)); // ウラ拍手動
+
+  if (playflag)
+  {
+    const auto auto_play = system_registry.runtime_info.getChordAutoplayState();
+    if (auto_play == def::play::auto_play_mode_t::auto_play_none) {
+      auto param = is_pressed
+                 ? def::command::step_advance_t::on_beat
+                 : def::command::step_advance_t::off_beat;
+      // 手動演奏の場合はここでステップ進行コマンドを発行する
+      system_registry.player_command.addQueue( { def::command::chord_beat, param } );
+    } else if (_auto_play_onbeat_remain_usec < 0) {
+      // 自動演奏の開始待ち受け状態の場合はこのタイミングで自動演奏の開始
+      _auto_play_onbeat_remain_usec = 0;
+      system_registry.runtime_info.setChordAutoplayState(def::play::auto_play_mode_t::auto_play_running);
+    }
+  }
+}
+
+void task_kantanplay_t::procChordBeat(const def::command::command_param_t& command_param, const bool is_pressed)
+{
+  if (!is_pressed) { return; }
+  // パラメータが 1のときオンビート、それ以外のときはオフビート扱いとする
+  bool on_beat = command_param.getParam() == def::command::step_advance_t::on_beat;
+
+// この関数が呼ばれるのはユーザーによるDegreeボタン操作時や外部からのパルスがトリガー。
+// 自動演奏によるトリガーは含まれない。
+
+  // 次回の自動演奏タイミングをキャンセルしておく
+  _auto_play_onbeat_remain_usec = -1;
+  _auto_play_offbeat_remain_usec = -1;
+
+  chordBeat(on_beat);
+
+  const auto auto_play = system_registry.runtime_info.getChordAutoplayState();
+  const auto offbeat_style = system_registry.user_setting.getOffbeatStyle();
+
+  if (on_beat) {
+    // 自動演奏のサイクルを更新する
+    setOnbeatCycle(_current_usec - _reactive_onbeat_usec);
+    _reactive_onbeat_usec = _current_usec;
+
+    if ((auto_play != def::play::auto_play_mode_t::auto_play_none)
+     || (offbeat_style != def::play::offbeat_style_t::offbeat_self)) {
+      updateOffbeatTiming();
+    }
+  } else {
+    // ウラ拍の演奏が手動の場合
+    if ((auto_play == def::play::auto_play_mode_t::auto_play_none)
+     && (offbeat_style == def::play::offbeat_style_t::offbeat_self)) {
+      // 手動だが step per beat が 3以上の場合は、後続のウラ拍を自動演奏にする
+      const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
+      if (step_per_beat >= 3) {
+        auto offbeat_cycle_usec = _current_usec - _reactive_onbeat_usec;
+        // ウラ拍のタイミングを更新する (TODO : スイングに対応する)
+        uint32_t step_cycle_usec = offbeat_cycle_usec;
+        _auto_play_offbeat_remain_usec = step_cycle_usec;
+        _auto_play_offbeat_cycle_usec[0] = step_cycle_usec;
+        _auto_play_offbeat_cycle_usec[1] = step_cycle_usec;
+      }
+    }
+  }
+}
+
+// ビート処理
+void task_kantanplay_t::chordBeat(const bool on_beat)
+{
+  // 何ステップ進むか調べる (ウラを飛ばしてオモテが連打されるケースに対応するため)
+  int advance = calcStepAdvance(on_beat);
+  if (advance == 0) return;
+
+  do {
+    // アルペジエータのステップを進める
+    chordStepAdvance();
+
+    // 現在位置の演奏
+    chordStepPlay();
+  } while (--advance);
+}
+
+void task_kantanplay_t::setOnbeatCycle(int32_t usec)
+{
+  // ステップが強制リセットされた後や無操作時間が長かった場合などは値が極端に小さくなるので、
+  // ここで指定値を捨ててソングデータのテンポに基づいた値に変更する
+  if (usec < 16384) {
+    usec = getOnbeatCycleBySongTempo();
+    _reactive_onbeat_usec = _current_usec;
+  }
+  _reactive_onbeat_cycle_usec = usec;
+
+  // 一定時間経過後にアルペジエータを先頭に戻す時間を更新する
+  _arpeggio_reset_remain_usec = usec * def::app::arpeggio_reset_timeout_beats;
+}
+
+// オンビート演奏の間隔を取得する
+int32_t task_kantanplay_t::getOnbeatCycle(void)
+{
+  if (_reactive_onbeat_cycle_usec >= 16384) { return _reactive_onbeat_cycle_usec;}
+  return getOnbeatCycleBySongTempo();
+}
+
+// オンビート演奏の間隔を取得する (曲のテンポから計算する)
+int32_t task_kantanplay_t::getOnbeatCycleBySongTempo(void)
 {
   auto tempo = system_registry.song_data.song_info.getTempo();
   if (tempo < def::app::tempo_bpm_min) { tempo = def::app::tempo_bpm_default; }
 
-  uint8_t swing = system_registry.song_data.song_info.getSwing();
+  // テンポ値からオンビートの時間間隔を求める
+  return (60 * 1000 * 1000 + (tempo >> 1)) / tempo;
+}
+
+void task_kantanplay_t::updateOffbeatTiming(void)
+{
+  // オモテ拍の間隔に基づいてウラ拍のタイミングを計算し更新する
+  int32_t onbeat_cycle_usec = getOnbeatCycle();
+  const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
+
+  uint32_t step_cycle_usec = onbeat_cycle_usec / step_per_beat;
+  uint32_t swing_0_usec = step_cycle_usec;
+  uint32_t swing_1_usec = step_cycle_usec;
+  if ((step_per_beat & 1) == 0) { // step_per_beatが2や4の場合はスイングさせる
+    // スイングパラメータを確認する
+    uint_fast16_t swing = calcSwing_x100();
+    swing_0_usec = step_cycle_usec + (step_cycle_usec * swing / 10000);
+    swing_1_usec = step_cycle_usec * 2 - swing_0_usec;
+  }
+  // オフビートの間隔を求める (スイングに対応させる)
+  _auto_play_offbeat_remain_usec = swing_0_usec;
+  _auto_play_offbeat_cycle_usec[0] = swing_1_usec;
+  _auto_play_offbeat_cycle_usec[1] = swing_0_usec;
+}
+
+// スイングの計算 (スイングのパラメータに基づいて、オモテ拍側の比率増加分を計算する)
+// 得られる値 0 - 3333 (オモテ拍の時間間隔にこの値を掛けて / 10000 するとスイング比率が反映された値になる)
+int32_t task_kantanplay_t::calcSwing_x100(void)
+{
+  uint_fast8_t swing = system_registry.song_data.song_info.getSwing();
   if (swing > def::app::swing_percent_max) { swing = def::app::swing_percent_max; }
 
-  // swing 0のとき on_beat:off_beat = 1:1、swing 100のとき on_beat:off_beat = 2:1 となるようにする
-  swing = 50 + (swing / 6); // 0-100 -> 50-66
-
-  uint32_t cycle_usec = (60 * 1000 * 1000 + (tempo >> 1)) / tempo;
-  uint32_t onbeat_usec = cycle_usec * swing / 100;
-  uint32_t offbeat_usec = cycle_usec - onbeat_usec;
-
-// M5_LOGV("tempo:%d, swing:%d, cycle:%d, onbeat:%d, offbeat:%d", tempo, swing, cycle_usec, onbeat_usec, offbeat_usec);
-
-  _auto_play_onbeat_usec = onbeat_usec;
-  _auto_play_offbeat_usec = offbeat_usec;
+  // swing 0のとき on:off 比率 1:1、swing 100のとき on:off 比率 = 2:1 となるようにする
+  return (swing * 100 / 3); // 元の値 [0 ～ 100] に対し、得られる値 [0 ～ 3333]
 }
+
+// 何ステップ進むか調べる
+int32_t task_kantanplay_t::calcStepAdvance(const bool on_beat)
+{
+  const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
+  if (step_per_beat < 1) {
+    // データが準備できていない場合は 0 で返す (起動直後の未初期化状態への対策)
+    return 0;
+  }
+
+  int advance = 1;
+  if (on_beat) {
+    if (step_per_beat > 1) {
+      // オンビートの場合は現在位置から次のオモテ拍の位置までのステップ数を得る
+      advance = (((int)step_per_beat - _current_beat_index - 1) % step_per_beat) + 1;
+    }
+  } else {
+    // オフビートの場合、進行先がオンビートのステップに到達してしまう時は進まないように調整する
+    if (_current_beat_index >= step_per_beat - 1) {
+      _current_beat_index = step_per_beat - 1;
+      advance = 0;
+    }
+  }
+  return advance;
+}
+
+// アルペジエータのステップを進める
+void task_kantanplay_t::chordStepAdvance(void)
+{
+  const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
+  if (step_per_beat < 1) {
+    // データが準備できていない場合は何もせずに返す
+    return;
+  }
+
+  auto chord_play = &system_registry.chord_play;
+
+  bool on_beat = (++_current_beat_index % step_per_beat) == 0;
+
+  system_registry.working_command.clear( { def::command::chord_degree, _current_option.degree } );
+  // printf("DEBUG 1 : %d \n", on_beat);
+  if (on_beat)
+  { // オンビート (オモテ拍) の場合、アルペジエータを先頭に戻す判定を実施
+    _current_beat_index = 0;
+
+    // 先頭に戻すフラグ (強制的に戻す)
+    bool force_reset = false;
+
+    // 先頭に戻すフラグ (但しアンカーステップが効く)
+    bool normal_reset = false;
+
+    // _current_option と _next_option が違う場合は先頭に戻す (アンカーステップは効く)
+    if (_current_option != _next_option) {
+      _current_option = _next_option;
+      normal_reset = true;
+    }
+
+    // ステップのリセット要求があれば先頭に戻す
+    if (_step_reset_request) {
+      _step_reset_request = false;
+      force_reset = true;
+      setOnbeatCycle(-1);
+    }
+
+    // コードが選ばれていない場合は先頭に戻す
+    if (_current_option.degree < 1 || 7 < _current_option.degree)
+    {
+      force_reset = true;
+    } else {
+      // 動作中のコードボタンの表示反映
+      system_registry.working_command.set( { def::command::chord_degree, _current_option.degree } );
+    }
+
+    // スロットが変更になっている場合は先頭に戻す (アンカーステップ無効、強制的に戻す)
+    auto slot_index = system_registry.runtime_info.getPlaySlot();
+    if (_current_slot_index != slot_index) {
+      _current_slot_index = slot_index;
+      force_reset = true;
+    }
+    uint_fast8_t enabledCounter = 0;
+    uint_fast8_t firstStepCounter = 0;
+// printf("DEBUG 2 : %d \n", step_reset);
+
+    int8_t step_list[def::app::max_chord_part];
+    for (int i = 0; i < def::app::max_chord_part; ++i) {
+      int_fast8_t current_step = chord_play->getPartStep(i);
+      step_list[i] = current_step;
+
+      // 強制的に先頭に戻さない場合は条件を確認する
+      auto part = &system_registry.current_slot->chord_part[i];
+      auto part_info = &part->part_info;
+
+      const int loop_step = part_info->getLoopStep();
+
+      bool note_off_flag = false;
+
+      if (force_reset)
+      { // 強制的に戻す場合
+        note_off_flag = true;
+        current_step = 0;
+      } else {
+        int anchor_step = part_info->getAnchorStep();
+        // 先頭に戻す(アンカーステップが効く)場合は現在位置を比較
+        if (normal_reset && current_step >= anchor_step) {
+          // アンカーステップより先に進んでいれば先頭に戻す
+          note_off_flag = true;
+          current_step = 0;
+        } else {
+          // 終端に達していたら先頭に戻す
+          current_step = ((current_step + step_per_beat) / step_per_beat) * step_per_beat;
+          if (current_step > loop_step) {
+            current_step = 0;
+          }
+        }
+      }
+
+      if (loop_step > 2) {
+        if (chord_play->getPartEnable(i)) {
+          ++enabledCounter;
+          firstStepCounter += (bool)(current_step <= 0);
+        }
+      }
+      if (note_off_flag) {
+        chordNoteOff(i);
+      }
+      step_list[i] = current_step;
+    }
+
+    bool flgFirstStep = (enabledCounter == 0 || ((firstStepCounter << 1) > enabledCounter));
+
+    for (int i = 0; i < def::app::max_chord_part; ++i) {
+      int_fast8_t current_step = step_list[i];
+
+      bool current_enable = chord_play->getPartEnable(i);
+      if (flgFirstStep || current_step <= 0) {
+        bool next_enable = chord_play->getPartNextEnable(i);
+        // パートが現在有効かどうかと、次回パートを有効にする指示があるかどうかを比較
+        if (current_enable != next_enable) {
+          if (flgFirstStep || current_enable) {
+            current_enable = next_enable;
+            system_registry.chord_play.setPartEnable(i, current_enable);
+            chordNoteOff(i);
+          }
+        }
+      }
+      // パートが無効化している場合はステップを0に設定しておく
+      if (current_enable == false) {
+        current_step = 0;
+      }
+      system_registry.chord_play.setPartStep(i, current_step);
+    }
+  }
+  else
+  { // オフビート (ウラ拍) の場合
+    for (int i = 0; i < def::app::max_chord_part; ++i) {
+      int_fast8_t current_step = chord_play->getPartStep(i);
+      if (chord_play->getPartEnable(i)) {
+        current_step = ((current_step / step_per_beat) * step_per_beat) + _current_beat_index;
+      }
+      system_registry.chord_play.setPartStep(i, current_step);
+    }
+  }
+}
+
+void task_kantanplay_t::chordStepPlay(void)
+{
+  int degree = _current_option.degree;  //system_registry.chord_play.getChordDegree();
+  if (degree < 1 || 7 < degree) {
+    // コードが選ばれていない場合は終了
+    return;
+  }
+  int master_key = system_registry.runtime_info.getMasterKey();
+  int slot_key = master_key + (int8_t)system_registry.current_slot->slot_info.getKeyOffset();
+  while (slot_key < 0) { slot_key += 12; }
+  while (slot_key >= 12) { slot_key -= 12; }
+
+  KANTANMusic_GetMidiNoteNumberOptions options;
+  KANTANMusic_GetMidiNoteNumber_SetDefaultOptions(&options);
+  options.minor_swap = _current_option.minor_swap;
+  options.semitone_shift = _current_option.semitone_shift;
+  options.modifier = system_registry.chord_play.getChordModifier();
+  options.bass_degree =  _current_option.bass_degree;
+  options.bass_semitone_shift =  _current_option.bass_semitone_shift;
+
+// M5_LOGE("key: %d, minor_swap: %d, modifier: %d, semitone: %d", key, minor_swap, (int)modifier, semitone);
+  for (int part = 0; part < def::app::max_chord_part; ++part) {
+    bool part_en = system_registry.chord_play.getPartEnable(part);
+    uint8_t midi_ch = part;
+    auto chord_part = &system_registry.current_slot->chord_part[part];
+    auto part_info = &chord_part->part_info;
+    options.position = part_info->getPosition();
+    options.voicing = part_info->getVoicing();
+
+    int displacement_usec = 1000 * part_info->getStrokeSpeed();
+    int autorelease_usec = 1000 * def::app::autorelease_msec;
+    int32_t press_usec = 0;
+    int step = system_registry.chord_play.getPartStep(part);
+    if (step < 0) {
+      continue;
+    }
+    bool flg_use = false;
+
+    int pitch_flow = 1;
+    int pitch_index = 0;
+    int pitch_last = def::app::max_pitch_with_drum;
+
+    // ドラムパートの場合の処理分岐
+    bool is_drum = (part_info->isDrumPart());
+    bool mute = false;
+    if (is_drum) {
+      displacement_usec = 0;
+      midi_ch = def::midi::channel_10;
+    } else {
+      switch (chord_part->arpeggio.getStyle(step))
+      {
+      default:
+      case def::play::arpeggio_style_t::same_time:
+        displacement_usec = 0;
+        break;
+
+      case def::play::arpeggio_style_t::high_to_low:
+        pitch_flow = 1;
+        pitch_index = 0;
+        pitch_last = def::app::max_pitch_with_drum;
+        break;
+
+      case def::play::arpeggio_style_t::low_to_high:
+        pitch_flow = -1;
+        pitch_index = def::app::max_pitch_with_drum - 1;
+        pitch_last = -1;
+        break;
+
+      case def::play::arpeggio_style_t::mute:
+        mute = true;
+        // ミュート処理は同時発音ではなく高速ダウンストロークとして扱う
+
+        // ミュート処理の時はリリースまでの時間はストロークスピードの 2倍とする
+        autorelease_usec = displacement_usec * 2;
+
+        // ミュート処理の時はストロークスピードは 1/4 とする。
+        displacement_usec >>= 2;
+        pitch_flow = -1;
+        pitch_index = def::app::max_pitch_with_drum - 1;
+        pitch_last = -1;
+        break;
+      }
+    }
+
+    for (; pitch_index != pitch_last; pitch_index += pitch_flow) {
+      int velocity = 0;
+      if (part_en) { velocity = chord_part->arpeggio.getVelocity(step, pitch_index); }
+      if (velocity) {
+        if (0 < velocity) {
+          velocity = velocity * _press_velocity / 100;
+          if (velocity > 127) { velocity = 127; }
+          if (velocity < 1) { velocity = 1; }
+        }
+      } else {
+        if (!mute) {
+          continue;
+        }
+        // if (manage->velocity == 0
+        //  && manage->midi_ch == midi_ch) {
+        //     continue;
+        //  }
+      }
+
+      uint32_t note = 0;
+      if (is_drum) {
+        note = system_registry.song_data.chord_part_drum[part].getDrumNoteNumber(pitch_index);
+      } else {
+        if (pitch_index >= 6) { continue; }
+        // M5_LOGV("degree: %d, slot_key: %d, semitone: %d, base_degree:%d, base_semitone:%d", degree, slot_key, options.semitone_shift, options.bass_degree, options.bass_semitone_shift);
+        note = KANTANMusic_GetMidiNoteNumber(
+          6 - pitch_index
+          , degree
+          , slot_key
+          , &options
+        );
+      }
+      setPitchManage(part, pitch_index, midi_ch, note, velocity, press_usec, press_usec + autorelease_usec);
+      press_usec += displacement_usec;
+      flg_use = true;
+    }
+    if (flg_use) {
+      uint8_t program = part_info->getTone();
+      uint8_t chvolume = part_info->getVolume() * 127 / 100;
+      if (chvolume > 127) { chvolume = 127; }
+      system_registry.midi_out_control.setProgramChange(midi_ch, program);
+      system_registry.midi_out_control.setChannelVolume(midi_ch, chvolume);
+    }
+  }
+}
+
+
+
+
+
+
+
 
 void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& command_param, const bool is_pressed)
 {
@@ -138,7 +719,7 @@ void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& com
   int slot_key = master_key + (int8_t)system_registry.current_slot->slot_info.getKeyOffset();
   while (slot_key < 0) { slot_key += 12; }
   while (slot_key >= 12) { slot_key -= 12; }
-  int degree = _degree;
+  int degree = system_registry.chord_play.getChordDegree();
   if (degree < 1) { degree = 1; }
   else if (degree > 7) { degree = 7; }
 
@@ -261,85 +842,6 @@ void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& com
   }
 }
 
-void task_kantanplay_t::procChordDegree(const def::command::command_param_t& command_param, const bool is_pressed)
-{
-  const bool on_beat = is_pressed;
-  const uint8_t degree = command_param.getParam();
-
-  int current_degree = system_registry.chord_play.getChordDegree();
-
-  // 現在のDegreeと異なる場合
-  if (current_degree != degree) {
-    // ボタンを離した場合は何もしない
-    if (!on_beat) {
-      return;
-    }
-    system_registry.chord_play.setChordDegree(degree);
-  }
-  auto auto_play = system_registry.runtime_info.getChordAutoplayState();
-
-  switch (auto_play) {
-  default: break;
-  case def::play::auto_play_mode_t::auto_play_none:
-  case def::play::auto_play_mode_t::auto_play_running:
-    _auto_play_recording_index = 0;
-    break;
-
-  case def::play::auto_play_mode_t::auto_play_waiting:
-    _auto_play_remain_usec = 0;
-    auto_play = def::play::auto_play_mode_t::auto_play_running;
-    // updateTempoSwing();
-    system_registry.runtime_info.setChordAutoplayState(auto_play);
-    break;
-
-/* // 連打間隔に基づいて自動演奏のサイクルを決定する
-  case def::play::auto_play_mode_t::auto_play_recording:
-    if ((_auto_play_recording_index & 1) == on_beat) {
-      break;
-    }
-
-    _auto_play_recording_usec[_auto_play_recording_index] = _current_usec;
-    if (++_auto_play_recording_index >= 8) {
-      _auto_play_recording_index = 0;
-      uint32_t looping_usec = 0;
-      uint32_t onbeat_usec = 0;
-      for (int i = 0; i < 6; i += 2) {
-        // 押し下げ時間の間隔
-        looping_usec += _auto_play_recording_usec[i + 2] - _auto_play_recording_usec[i];
-
-        // 押し下げから離しまでの間隔
-        onbeat_usec += _auto_play_recording_usec[i + 1] - _auto_play_recording_usec[i];
-      }
-      looping_usec /= 3;
-      onbeat_usec /= 3;
-      _auto_play_onbeat_usec = onbeat_usec;
-      _auto_play_offbeat_usec = looping_usec - onbeat_usec;
-M5_LOGV("looping_msec: %d, onbeat_msec: %d  bpm:%d", looping_usec / 1000, onbeat_usec / 1000, 60 * 1000 * 1000 / looping_usec);
-      _auto_play_remain_usec = 0;
-      auto_play = def::play::auto_play_mode_t::auto_play_running;
-      system_registry.runtime_info.setChordAutoplayState(auto_play);
-    }
-    break;
-//*/
-  }
-  if (auto_play != def::play::auto_play_mode_t::auto_play_running) {
-    _is_on_beat = on_beat;
-    chordStep(on_beat);
-    chordPlay(on_beat);
-  }
-}
-
-void task_kantanplay_t::procChordStepAdvance(const def::command::command_param_t& command_param, const bool is_pressed)
-{
-  if (!is_pressed) { return; }
-
-  if (command_param.getParam() == 1)
-  {
-    chordStep(true);
-  }
-
-}
-
 void task_kantanplay_t::procChordStepResetRequest(const def::command::command_param_t& command_param, const bool is_pressed)
 {
   chordStepReset();
@@ -347,179 +849,20 @@ void task_kantanplay_t::procChordStepResetRequest(const def::command::command_pa
 
 void task_kantanplay_t::chordStepReset(void)
 {
-  if (_is_on_beat) {
-    _step_reset_request = true;
-  } else {
-    _step_reset_request = false;
+  _step_reset_request = true;
+
+  const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
+  if (_current_beat_index || step_per_beat < 2) {
     for (int i = 0; i < def::app::max_chord_part; ++i) {
-      int banlift = system_registry.current_slot->chord_part[i].part_info.getAnchorStep();
-      if (banlift < system_registry.chord_play.getPartStep(i))
-      {
-        system_registry.chord_play.setPartStep(i, 0);
-        if (!system_registry.chord_play.getPartNextEnable(i)) {
-          system_registry.chord_play.setPartEnable(i, false);
-          chordNoteOff(i);
-        }
-      }
+      system_registry.chord_play.setPartStep(i, 0);
     }
   }
 }
 
-void task_kantanplay_t::chordStep(bool on_beat)
-{
-  // パートの有効無効の切り替えタイミングになったか否かをチェックする
-  // アルペジオパターンの先頭に戻ったタイミングでパネルの有効無効をチェンジする
 
-/*
-●パターンの演奏ステップが先頭に戻るタイミング
- - 強制的に先頭に戻るタイミング
-   - パターン終端に到達した場合
-   - スロットが変更になった場合
-   - 無操作で一定時間経過した場合 (自動演奏時と編集時を除く)
 
- - on_beat時に先頭に戻る可能性があるタイミング
-   - Degreeが変更になった場合
-   - マイナースワップやセミトーンシフトが変更になった場合
-   ↑ (ステップ位置がループ禁止範囲にある場合は許可しない)
-     (ステップ先頭裏拍にある場合は許可しない)
 
-●パートがオンからオフに変更になるタイミング
- - ループ先頭に戻った時
 
-●パートがオフからオンに変更になるタイミング
- - on_beat時
-   - 現在有効なパートがひとつもない場合
-   - 半数以上のパートが先頭にある場合
-*/
-
-  bool reset_request = false;
-  bool force_reset = false;
-  auto slot_index = system_registry.runtime_info.getPlaySlot();
-  // auto history_code = system_registry.current_slot->slot_info.getHistoryCode();
-  if (on_beat)
-  { // オモテ拍でのみ、先頭に戻すリクエストを受け付ける
-    reset_request = _step_reset_request;
-    force_reset = reset_request;
-    _step_reset_request = false;
-
-    // Degreeが変更になっている場合は先頭に戻すリクエストフラグを立てる(強制ではない)
-    int degree = system_registry.chord_play.getChordDegree();
-    if (_degree != degree) {
-      // Degreeが変更になった場合は前回のDegreeのボタンを消灯する
-      system_registry.working_command.clear( { def::command::chord_degree, _degree } );
-      _degree = degree;
-      reset_request = true;
-    }
-
-    // マイナースワップや半音上げ下げが変更になった場合は先頭に戻すリクエストフラグを立てる(強制ではない)
-    int minor_swap = system_registry.chord_play.getChordMinorSwap();
-    int semitone = system_registry.chord_play.getChordSemitone();
-    if (_minor_swap != minor_swap || _semitone != semitone) {
-      _minor_swap = minor_swap;
-      _semitone = semitone;
-      reset_request = true;
-    }
-
-    // オンコード用のベースDegreeが変更になった時は先頭に戻すリクエストフラグを立てる(強制ではない)
-    int base_degree = system_registry.chord_play.getChordBaseDegree();
-    if (_bass_degree != base_degree) {
-      _bass_degree = base_degree;
-      reset_request = true;
-    }
-
-    // オンコード用のベースSemitoneが変更になった時は先頭に戻すリクエストフラグを立てる(強制ではない)
-    int base_semitone = system_registry.chord_play.getChordBaseSemitone();
-    if (_bass_semitone != base_semitone) {
-      _bass_semitone = base_semitone;
-      reset_request = true;
-    }
-
-    // スロットが切り替わっていれば強制的に先頭に戻すフラグを立てる(強制)
-    if (_slot_index != slot_index) {
-      _slot_index = slot_index;
-      force_reset = true;
-      reset_request = true;
-    }
-
-    _arpeggio_reset_remain_usec = -1;
-  } else {
-    auto tempo = system_registry.song_data.song_info.getTempo();
-    if (tempo < def::app::tempo_bpm_min) { tempo = def::app::tempo_bpm_default; }
-    uint32_t cycle_usec = (60 * 1000 * 1000 + (tempo >> 1)) / tempo;
-    _arpeggio_reset_remain_usec = cycle_usec * def::app::arpeggio_reset_timeout_beats;
-  }
-
-  int firstStepCounter = 0;
-  int enabledCounter = 0;
-
-  auto chord_play = &system_registry.chord_play;
-  for (int i = 0; i < def::app::max_chord_part; ++i) {
-    if (reset_request) {
-      chordNoteOff(i);
-    }
-    if (!chord_play->getPartEnable(i)) { continue; }
-    auto chord_part = &system_registry.current_slot->chord_part[i];
-    auto part_info = &chord_part->part_info;
-    int end_point = part_info->getLoopStep();
-    int step = chord_play->getPartStep(i);
-    {
-      // ステップを戻す処理
-      if (force_reset || step >= end_point || 
-        (reset_request && step > part_info->getAnchorStep()))
-      {
-        step = 0;
-        chord_play->setPartStep(i, 0);
-        if (!chord_play->getPartNextEnable(i)) {
-          chord_play->setPartEnable(i, false);
-          chordNoteOff(i);
-        }
-      }
-      if (end_point > 2) {
-        firstStepCounter += (bool)(step <= 0);
-        ++enabledCounter;
-      }
-    }
-  }
-
-  if (enabledCounter == 0 || ((firstStepCounter << 1) > enabledCounter)) {
-    // _step_reset_request = false;
-    // ループ先頭に達したとき、パートを有効にする処理を実施
-    for (int i = 0; i < def::app::max_chord_part; ++i) {
-      bool current_enable = chord_play->getPartEnable(i);
-      bool next_enable = chord_play->getPartNextEnable(i);
-      if (current_enable == false && next_enable == true) {
-        system_registry.chord_play.setPartEnable(i, next_enable);
-        system_registry.chord_play.setPartStep(i, 0);
-      }
-    }
-
-    if (!on_beat) {
-      // オートプレイの先頭に戻るタイミングでDegree変更をしようとして間に合わなかった場合
-      // 先頭に戻った直後にまたすぐ先頭に戻る…という状況になるため、これを避けるためにここで処置する
-      int degree = system_registry.chord_play.getChordDegree();
-      if (_degree != degree) {
-        // Degreeが変更になった場合は前回のDegreeのボタンを消灯する
-        system_registry.working_command.clear( { def::command::chord_degree, _degree } );
-        _degree = degree;
-        // TODO:ここで音を消すかどうか要検討
-        // for (int i = 0; i < def::app::max_chord_part; ++i) {
-        //   chordNoteOff(i);
-        // }
-      }
-    }
-  }
-
-  for (int i = 0; i < def::app::max_chord_part; ++i) {
-    if (!chord_play->getPartEnable(i)) { continue;}
-    int step = chord_play->getPartStep(i);
-
-    // オモテ拍・ウラ拍がズレないように調整しつつステップを進める
-    if ((bool)(step & 1) == on_beat) {
-      ++step;
-      chord_play->setPartStep(i, step);
-    }
-  }
-}
 
 // 指定したノートナンバーの音が他のピッチでも鳴っている数を調べる関数
 int32_t task_kantanplay_t::checkOtherPitchNote(int part, int pitch, int midi_ch, int note_number)
@@ -540,105 +883,6 @@ int32_t task_kantanplay_t::checkOtherPitchNote(int part, int pitch, int midi_ch,
   //   M5_LOGV("checkOtherPitchNote: %d", count);
   // }
   return count;
-}
-
-
-uint32_t task_kantanplay_t::chordProc(void)
-{
-  uint32_t next_event_timing = INT32_MAX;
-  const int progress_usec = (int32_t)(_current_usec - _prev_usec);
-
-  // オートプレイ処理
-  if (_auto_play_remain_usec >= 0) {
-    bool on_beat = !_is_on_beat;
-    auto auto_play = system_registry.runtime_info.getChordAutoplayState();
-    if (on_beat && auto_play != def::play::auto_play_mode_t::auto_play_running)
-    { // オートプレイモードの停止は裏拍を終えた後に行う
-      _auto_play_remain_usec = -1;
-    } else {
-      int remain_usec = _auto_play_remain_usec - progress_usec;
-      if (remain_usec <= 0) {
-        _is_on_beat = on_beat;
-        chordStep(on_beat);
-        chordPlay(on_beat);
-        updateTempoSwing();
-        remain_usec += on_beat ? _auto_play_onbeat_usec : _auto_play_offbeat_usec;
-      }
-      _auto_play_remain_usec = remain_usec;
-      if (next_event_timing > remain_usec) {
-        next_event_timing = remain_usec;
-      }
-    }
-  }
-
-  for (int part = 0; part < def::app::max_chord_part; ++part) {
-    bool hit_flg = false;
-    for (int pitch = 0; pitch < def::app::max_pitch_with_drum; ++pitch) {
-      for (int m = 0; m < max_manage_history; ++m) {
-        auto manage = &_midi_pitch_manage[part][pitch][m];
-
-        int press_usec = manage->press_usec;
-        if (press_usec >= 0) {
-          press_usec -= progress_usec;
-          if (press_usec <= 0) {
-            press_usec = -1;
-            auto note_number = manage->note_number;
-            auto midi_ch = manage->midi_ch;
-            auto velocity = manage->velocity;
-            if (velocity) {
-              velocity |= 0x80;
-              system_registry.midi_out_control.setNoteVelocity(midi_ch, note_number, 0);
-              system_registry.midi_out_control.setNoteVelocity(midi_ch, note_number, velocity);
-              hit_flg = true;
-            }
-          } else if (next_event_timing > press_usec) {
-            next_event_timing = press_usec;
-          }
-          manage->press_usec = press_usec;
-        }
-
-        int release_usec = manage->release_usec;
-        if (release_usec >= 0) {
-          release_usec -= progress_usec;
-          if (release_usec <= 0) {
-            release_usec = -1;
-            auto note_number = manage->note_number;
-            auto midi_ch = manage->midi_ch;
-            // 同じノートナンバーの音が他のピッチで鳴っていない場合は音を停止する
-            if (0 == checkOtherPitchNote(part, pitch, midi_ch, note_number)) {
-              system_registry.midi_out_control.setNoteVelocity(manage->midi_ch, manage->note_number, 0);
-            }
-            manage->note_number = 0xFF;
-            manage->velocity = 0;
-          } else if (next_event_timing > release_usec) {
-            next_event_timing = release_usec;
-          }
-          manage->release_usec = release_usec;
-        }
-      }
-    }
-    if (hit_flg) {
-      system_registry.runtime_info.hitPartEffect(part);
-    }
-  }
-
-  // パターン編集モードでない場合
-  if (system_registry.runtime_info.getPlayMode() != def::playmode::playmode_t::chord_edit_mode) {
-    // アルペジエータのタイムアウト判定 (一定時間たつと強制的に先頭に戻す)
-    if (_arpeggio_reset_remain_usec >= 0) {
-      _arpeggio_reset_remain_usec -= progress_usec;
-      if (_arpeggio_reset_remain_usec <= 0) {
-        _arpeggio_reset_remain_usec = -1;
-        chordStepReset();
-      } else {
-        if (next_event_timing > _arpeggio_reset_remain_usec) {
-          next_event_timing = _arpeggio_reset_remain_usec;
-        }
-      }
-    }
-  }
-
-  return next_event_timing;
 }
 
 void task_kantanplay_t::chordNoteOff(int part)
@@ -713,138 +957,6 @@ void task_kantanplay_t::setPitchManage(uint8_t part, uint8_t pitch, uint8_t midi
   }
 }
 
-void task_kantanplay_t::chordPlay(bool on_beat)
-{
-  int master_key = system_registry.runtime_info.getMasterKey();
-  int slot_key = master_key + (int8_t)system_registry.current_slot->slot_info.getKeyOffset();
-  while (slot_key < 0) { slot_key += 12; }
-  while (slot_key >= 12) { slot_key -= 12; }
-  int degree = _degree;  //system_registry.chord_play.getChordDegree();
-
-  // 動作中のコードボタンの表示反映
-  if (on_beat) { // オモテ拍のタイミングで有効化
-    system_registry.working_command.set( { def::command::chord_degree, _degree } );
-  } else {       // ウラ拍のタイミングで解除
-    system_registry.working_command.clear( { def::command::chord_degree, _degree } );
-  }
-
-  KANTANMusic_GetMidiNoteNumberOptions options;
-  KANTANMusic_GetMidiNoteNumber_SetDefaultOptions(&options);
-  options.minor_swap = system_registry.chord_play.getChordMinorSwap();
-  options.semitone_shift = system_registry.chord_play.getChordSemitone();
-  options.modifier = system_registry.chord_play.getChordModifier();
-  options.bass_degree = _bass_degree;
-  options.bass_semitone_shift = _bass_semitone;
-
-// M5_LOGE("key: %d, minor_swap: %d, modifier: %d, semitone: %d", key, minor_swap, (int)modifier, semitone);
-  for (int part = 0; part < def::app::max_chord_part; ++part) {
-    bool part_en = system_registry.chord_play.getPartEnable(part);
-    uint8_t midi_ch = part;
-    auto chord_part = &system_registry.current_slot->chord_part[part];
-    auto part_info = &chord_part->part_info;
-    options.position = part_info->getPosition();
-    options.voicing = part_info->getVoicing();
-
-    int displacement_usec = 1000 * part_info->getStrokeSpeed();
-    int autorelease_usec = 1000 * def::app::autorelease_msec;
-    int32_t press_usec = 0;
-    int step = system_registry.chord_play.getPartStep(part);
-    if (step < 0) {
-      continue;
-    }
-    bool flg_use = false;
-
-    int pitch_flow = 1;
-    int pitch_index = 0;
-    int pitch_last = def::app::max_pitch_with_drum;
-
-    // ドラムパートの場合の処理分岐
-    bool is_drum = (part_info->isDrumPart());
-    bool mute = false;
-    if (is_drum) {
-      displacement_usec = 0;
-      midi_ch = def::midi::channel_10;
-    } else {
-      switch (chord_part->arpeggio.getStyle(step))
-      {
-      default:
-      case def::play::arpeggio_style_t::same_time:
-        displacement_usec = 0;
-        break;
-
-      case def::play::arpeggio_style_t::high_to_low:
-        pitch_flow = 1;
-        pitch_index = 0;
-        pitch_last = def::app::max_pitch_with_drum;
-        break;
-
-      case def::play::arpeggio_style_t::low_to_high:
-        pitch_flow = -1;
-        pitch_index = def::app::max_pitch_with_drum - 1;
-        pitch_last = -1;
-        break;
-
-      case def::play::arpeggio_style_t::mute:
-        mute = true;
-        // ミュート処理は同時発音ではなく高速ダウンストロークとして扱う
-
-        // ミュート処理の時はリリースまでの時間はストロークスピードの 2倍とする
-        autorelease_usec = displacement_usec * 2;
-
-        // ミュート処理の時はストロークスピードは 1/4 とする。
-        displacement_usec >>= 2;
-        pitch_flow = -1;
-        pitch_index = def::app::max_pitch_with_drum - 1;
-        pitch_last = -1;
-        break;
-      }
-    }
-
-    for (; pitch_index != pitch_last; pitch_index += pitch_flow) {
-      int velocity = 0;
-      if (part_en) { velocity = chord_part->arpeggio.getVelocity(step, pitch_index); }
-      if (velocity) {
-        if (0 < velocity) {
-          velocity = velocity * _press_velocity / 100;
-          if (velocity > 127) { velocity = 127; }
-          if (velocity < 1) { velocity = 1; }
-        }
-      } else {
-        if (!mute) {
-          continue;
-        }
-        // if (manage->velocity == 0
-        //  && manage->midi_ch == midi_ch) {
-        //     continue;
-        //  }
-      }
-
-      uint32_t note = 0;
-      if (is_drum) {
-        note = system_registry.song_data.chord_part_drum[part].getDrumNoteNumber(pitch_index);
-      } else {
-        if (pitch_index >= 6) { continue; }
-        // M5_LOGV("degree: %d, slot_key: %d, semitone: %d, base_degree:%d, base_semitone:%d", degree, slot_key, options.semitone_shift, options.bass_degree, options.bass_semitone_shift);
-        note = KANTANMusic_GetMidiNoteNumber(
-          6 - pitch_index
-          , degree
-          , slot_key
-          , &options
-        );
-      }
-      setPitchManage(part, pitch_index, midi_ch, note, velocity, press_usec, press_usec + autorelease_usec);
-      press_usec += displacement_usec;
-      flg_use = true;
-    }
-    if (flg_use) {
-      uint8_t program = part_info->getTone();
-      uint8_t chvolume = part_info->getVolume() * 127 / 100;
-      if (chvolume > 127) { chvolume = 127; }
-      system_registry.midi_out_control.setProgramChange(midi_ch, program);
-      system_registry.midi_out_control.setChannelVolume(midi_ch, chvolume);
-    }
-  }
-}
 
 void task_kantanplay_t::procNoteButton(const def::command::command_param_t& command_param, const bool is_pressed)
 {

@@ -293,7 +293,7 @@ Button Index mapping
       mapping_switch,
       master_vol_ud, master_vol_set,
       master_key_ud, master_key_set,
-      chord_step_advance,       // 1=onbeat / 2=offbeat
+      chord_beat,       // 1=onbeat / 2=offbeat
       chord_step_reset_request, // 演奏ステップを次回オンビートのタイミングで先頭に戻す
       power_control,
       file_index_ud, file_index_set,
@@ -336,6 +336,10 @@ Button Index mapping
     };
     enum edit_enc2_target_t : uint8_t {
       part_vol = 1, position, voicing, velocity, program, banlift, endpoint, displacement,
+    };
+    enum step_advance_t : uint8_t {
+      on_beat = 1,
+      off_beat = 2, 
     };
     enum sound_effect_t : uint8_t {
       single = 1, testplay,
@@ -642,7 +646,7 @@ Button Index mapping
 
     // Port B デバイス用のボタン-コマンドマッピング
     static constexpr const command_param_array_t command_mapping_port_b_table[] = {
-      { chord_degree, 1}, { chord_degree, 2 },
+      { chord_beat, 1}, { chord_beat, 2 },
     };
   };
 
@@ -650,10 +654,16 @@ Button Index mapping
 
     enum auto_play_mode_t : uint8_t {
       auto_play_none,
-      auto_play_recording,
       auto_play_waiting,
       auto_play_running,
       auto_play_max,
+    };
+
+    enum offbeat_style_t : uint8_t {
+      offbeat_min = 0,
+      offbeat_auto,
+      offbeat_self,
+      offbeat_max,
     };
 
     enum arpeggio_style_t : uint8_t
@@ -755,7 +765,7 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 1;
-    static constexpr const uint32_t app_version_patch = 5;
+    static constexpr const uint32_t app_version_patch = 7;
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";

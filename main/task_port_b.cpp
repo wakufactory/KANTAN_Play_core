@@ -41,6 +41,9 @@ void task_port_b_t::task_func(task_port_b_t* me)
     for (int i = 0; i < def::hw::max_port_b_pins; ++i) {
       uint8_t level = m5gfx::gpio_in(pin_index[i]) ? 0 : 255;
       if (pin_level[i] != level) {
+        int diff = (int32_t)(pin_level[i] - level);
+        diff = diff * 3;
+        level += (diff < 0 ? diff + 1 : diff) >> 2;
         pin_level[i] = level;
         system_registry.external_input.setPortBValue8(i, level);
       }

@@ -166,7 +166,7 @@ void system_registry_t::reset(void)
   user_setting.setADCMicAmp(0);
 
   // オフビートスタイル設定
-  user_setting.setOffbeatStyle(0);
+  user_setting.setOffbeatStyle(def::play::offbeat_style_t::offbeat_auto);
 
   // IMU プレスベロシティ設定 (0は不使用)
   user_setting.setImuVelocityLevel(0);
@@ -514,18 +514,18 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
   }
   {
     auto json = json_root["user_setting"].as<JsonObject>();
-    user_setting.setLedBrightness(                  json["led_brightness"].as<uint8_t>());
-    user_setting.setDisplayBrightness(              json["display_brightness"].as<uint8_t>());
-    user_setting.setLanguage((def::lang::language_t)json["language"].as<uint8_t>());
-    user_setting.setGuiDetailMode(                  json["gui_detail_mode"].as<bool>());
-    user_setting.setGuiWaveView(                    json["gui_wave_view"].as<bool>());
-    user_setting.setMasterVolume(                   json["master_volume"].as<uint8_t>());
-    user_setting.setMIDIMasterVolume(               json["midi_master_volume"].as<uint8_t>());
-    user_setting.setADCMicAmp(                      json["adc_mic_amp"].as<uint8_t>());
-    user_setting.setOffbeatStyle(                   json["offbeat_style"].as<uint8_t>());
-    user_setting.setImuVelocityLevel(               json["imu_velocity_level"].as<uint8_t>());
-    user_setting.setChatteringThreshold(            json["chattering_threshold"].as<uint8_t>());
-    user_setting.setTimeZone(                       json["timezone"].as<int8_t>());
+    user_setting.setLedBrightness(                           json["led_brightness"      ].as<uint8_t>());
+    user_setting.setDisplayBrightness(                       json["display_brightness"  ].as<uint8_t>());
+    user_setting.setLanguage((def::lang::language_t)         json["language"            ].as<uint8_t>());
+    user_setting.setGuiDetailMode(                           json["gui_detail_mode"     ].as<bool>());
+    user_setting.setGuiWaveView(                             json["gui_wave_view"       ].as<bool>());
+    user_setting.setMasterVolume(                            json["master_volume"       ].as<uint8_t>());
+    user_setting.setMIDIMasterVolume(                        json["midi_master_volume"  ].as<uint8_t>());
+    user_setting.setADCMicAmp(                               json["adc_mic_amp"         ].as<uint8_t>());
+    user_setting.setOffbeatStyle((def::play::offbeat_style_t)json["offbeat_style"       ].as<uint8_t>());
+    user_setting.setImuVelocityLevel(                        json["imu_velocity_level"  ].as<uint8_t>());
+    user_setting.setChatteringThreshold(                     json["chattering_threshold"].as<uint8_t>());
+    user_setting.setTimeZone(                                json["timezone"            ].as<int8_t>());
   }
 
   // control_assignment::play button ( 旧名 key mapping )

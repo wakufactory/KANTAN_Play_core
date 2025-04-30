@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 namespace kanplay_ns {
 //-------------------------------------------------------------------------
@@ -99,8 +100,8 @@ protected:
         uint8_t getADCMicAmp(void) const { return get8(ADC_MIC_AMP); }
 
         // オフビート演奏の方法 (false=自動 / true=手動(ボタン離した時) )
-        void setOffbeatStyle(bool enabled) { set8(OFFBEAT_STYLE, enabled); }
-        bool getOffbeatStyle(void) const { return get8(OFFBEAT_STYLE); }
+        void setOffbeatStyle(def::play::offbeat_style_t style) { set8(OFFBEAT_STYLE, (uint8_t)std::min<uint8_t>(def::play::offbeat_style_t::offbeat_max - 1, std::max<uint8_t>(def::play::offbeat_style_t::offbeat_min + 1, style))); }
+        def::play::offbeat_style_t getOffbeatStyle(void) const { return (def::play::offbeat_style_t)get8(OFFBEAT_STYLE); }
 
         // IMUベロシティの強さ (0はIMUベロシティ不使用で固定値動作)
         void setImuVelocityLevel(uint8_t ratio) { set8(IMU_VELOCITY_LEVEL, ratio); }
@@ -576,6 +577,7 @@ protected:
             set8(STEP_PER_BEAT, spb);
         }
         uint8_t getStepPerBeat(void) const { return get8(STEP_PER_BEAT); }
+        // uint8_t getStepPerBeat(void) const { return 3; }
 
         // ノート演奏時のスケール
         void setNoteScale(uint8_t scale) { set8(NOTE_SCALE, scale); }
@@ -661,8 +663,8 @@ protected:
             CHORD_MODIFIER,
             CHORD_MINOR_SWAP,
             CHORD_SEMITONE,
-            CHORD_BASE_DEGREE,
-            CHORD_BASE_SEMITONE,
+            CHORD_BASS_DEGREE,
+            CHORD_BASS_SEMITONE,
             PART_1_STEP,  // パートの現在のステップ
             PART_2_STEP,
             PART_3_STEP,
@@ -697,10 +699,10 @@ protected:
         uint8_t getChordMinorSwap(void) const { return get8(CHORD_MINOR_SWAP); }
         void setChordSemitone(uint8_t semitone) { set8(CHORD_SEMITONE, semitone); }
         int getChordSemitone(void) const { return (int8_t)get8(CHORD_SEMITONE); }
-        void setChordBaseDegree(uint8_t degree) { set8(CHORD_BASE_DEGREE, degree); }
-        uint8_t getChordBaseDegree(void) const { return get8(CHORD_BASE_DEGREE); }
-        void setChordBaseSemitone(int semitone) { set8(CHORD_BASE_SEMITONE, semitone); }
-        int getChordBaseSemitone(void) const { return (int8_t)get8(CHORD_BASE_SEMITONE); }
+        void setChordBassDegree(uint8_t degree) { set8(CHORD_BASS_DEGREE, degree); }
+        uint8_t getChordBassDegree(void) const { return get8(CHORD_BASS_DEGREE); }
+        void setChordBassSemitone(int semitone) { set8(CHORD_BASS_SEMITONE, semitone); }
+        int getChordBassSemitone(void) const { return (int8_t)get8(CHORD_BASS_SEMITONE); }
         void setPartStep(uint8_t part_index, int8_t step) { set8(PART_1_STEP + part_index, step); }
         int8_t getPartStep(uint8_t part_index) const { return get8(PART_1_STEP + part_index); }
         void setPartEnable(uint8_t part_index, uint8_t enable) { set8(PART_1_ENABLE + part_index, enable); }

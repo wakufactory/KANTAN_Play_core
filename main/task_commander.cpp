@@ -18,6 +18,10 @@ class commander_t {
 
   // チャタリング防止処理を行う対象のボタンのビットマスク
   const uint32_t _chattering_target_bitmask;
+  const uint16_t _mask_all;
+  const uint16_t _mask_single;
+  const uint16_t _thresh_press;
+  const uint16_t _thresh_release;
   const uint8_t _bitlength = 1; // ボタンひとつあたりのビット数 (通常は 1。 アナログ扱いの PortB は 8bitとする) 
   const bool _use_internal_imu = false;
 
@@ -25,6 +29,10 @@ public:
 
   commander_t(uint8_t bitlen, bool use_internal_imu, uint32_t chattering_bitmask)
   : _chattering_target_bitmask { chattering_bitmask }
+  , _mask_all       { (uint16_t)((1 << bitlen)- 1 ) }
+  , _mask_single    { (uint16_t)( 1 <<(bitlen - 1)) }
+  , _thresh_press   { (uint16_t)( _mask_all ^ (_mask_all >> 2) ) }
+  , _thresh_release { (uint16_t)( _mask_all - _thresh_press ) }
   , _bitlength { bitlen }
   , _use_internal_imu { use_internal_imu }
   {}
@@ -52,16 +60,26 @@ public:
 
     // 前回のボタン状態との差分を取得
     uint32_t xor_bitmask = _prev_bitmask ^ raw_value;
+    uint32_t shift_value = raw_value;
+    uint32_t prev_value = _prev_bitmask;
+
     _prev_bitmask = raw_value;
 
-    uint32_t mask_single = 1 << (_bitlength - 1);
-    uint32_t mask_all  = (1 << _bitlength) - 1;
-    uint32_t shift_value = raw_value;
-    for (int i = 0; xor_bitmask; ++i, xor_bitmask >>= _bitlength, shift_value >>= _bitlength) {
+    for (int i = 0; xor_bitmask; ++i, xor_bitmask >>= _bitlength, shift_value >>= _bitlength, prev_value >>= _bitlength) {
       // 変化がない箇所はスキップ
-      if (0 == (xor_bitmask & mask_all)) { continue; }
+      if (0 == (xor_bitmask & _mask_all)) { continue; }
 
-      bool pressed = shift_value & mask_single;
+      uint32_t value = shift_value & _mask_all;
+      bool pressed  = value >= _thresh_press;
+      bool released = value <= _thresh_release;
+      if (pressed == released) { continue; }
+
+      if (_bitlength > 1) {
+        uint32_t prev = prev_value & _mask_all;
+        bool prev_pressed  = prev >= _thresh_press;
+        bool prev_released = prev <= _thresh_release;
+        if (pressed == prev_pressed && released == prev_released) { continue; }
+      }
 
       // チャタリング防止判定
       if (_chattering_target_bitmask & (1 << i)) {
@@ -74,7 +92,7 @@ public:
 
           if (0 < diff) {
             // 押してから離すまでの時間が短すぎる場合はチャタリングの可能性を考慮して、まだ押したままという扱いにする
-            _prev_bitmask |= mask_single << (i * _bitlength);
+            _prev_bitmask |= _mask_all << (i * _bitlength);
             // 次回のdelay終了タイミングがチャタリング判定期間の終了タイミングになるよう設定
             if (delay_msec > diff) {
               delay_msec = diff;
