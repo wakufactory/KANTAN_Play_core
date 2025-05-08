@@ -332,7 +332,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
 
       // パターン編集モードでない場合、アルペジエータのステップを先頭に戻す
       if (system_registry.runtime_info.getPlayMode() != def::playmode::playmode_t::chord_edit_mode) {
-        system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+        system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
       }
 
     } else {
@@ -453,7 +453,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
               system_registry.song_data.assign(system_registry.unchanged_song_data);
             }
             system_registry.operator_command.addQueue( { def::command::slot_select, 1 } );
-            system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+            system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
           }
           break;
 
@@ -652,7 +652,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
       // コード演奏モードに戻す
       system_registry.operator_command.addQueue( { def::command::play_mode_set, def::playmode::playmode_t::chord_mode } );
       // 演奏ステップを先頭に戻す
-      system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+      system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
       system_registry.checkSongModified();
     }
     break;
@@ -849,7 +849,7 @@ void task_operator_t::procEditFunction(const def::command::command_param_t& comm
       while (new_x >= end_point) { new_x -= end_point; }
       // 横座標が先頭にある場合は全てのパートを先頭に戻させる
       if (new_x == 0) {
-        system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+        system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
       }
     }
     system_registry.chord_play.setPartStep(part_index, new_x);
@@ -913,7 +913,7 @@ void task_operator_t::procChordMinorSwap(const def::command::command_param_t& co
 {
   system_registry.chord_play.setChordMinorSwap(is_pressed);
   // メジャー・マイナースワップボタンを押したタイミングでコード演奏のアルペジオパターン先頭にステップを戻す
-  // system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+  // system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
 }
 
 void task_operator_t::procChordSemitone(const def::command::command_param_t& command_param, const bool is_pressed)
@@ -923,7 +923,7 @@ void task_operator_t::procChordSemitone(const def::command::command_param_t& com
   if (system_registry.working_command.check( { def::command::chord_semitone, 2 } )) { ++value; }
   system_registry.chord_play.setChordSemitone(value);
   // 半音変更ボタンを操作したタイミングでコード演奏のアルペジオパターン先頭にステップを戻す
-  // system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 0 } );
+  // system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
 }
 
 void task_operator_t::procChordBaseDegree(const def::command::command_param_t& command_param, const bool is_pressed)

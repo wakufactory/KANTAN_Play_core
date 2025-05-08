@@ -72,18 +72,19 @@ Degree操作コマンド {
   {
     uint8_t degree;
     uint8_t bass_degree;
-    int8_t semitone_shift;
-    int8_t bass_semitone_shift;
-    bool minor_swap;
+    // int8_t semitone_shift;
+    // int8_t bass_semitone_shift;
+    // bool minor_swap;
     // 比較演算子オペレータ
 
     bool operator==(const chord_option_t& rhs) const
     {
       return rhs.degree == degree
           && rhs.bass_degree == bass_degree
-          && rhs.semitone_shift == semitone_shift
-          && rhs.bass_semitone_shift == bass_semitone_shift
-          && rhs.minor_swap == minor_swap;
+          // && rhs.semitone_shift == semitone_shift
+          // && rhs.bass_semitone_shift == bass_semitone_shift
+          // && rhs.minor_swap == minor_swap;
+          ;
     }
     bool operator!=(const chord_option_t& rhs) const
     {
@@ -115,8 +116,17 @@ Degree操作コマンド {
   // ステップのオン・オフ進行状況保持用 0==オンビート , 1~3==オフビート位置
   uint8_t _current_beat_index = 0;
 
-  // 演奏中のスロット番号 (オモテ拍で確定した内容)
+  // オモテ拍のタイミングで確定した演奏中のスロット番号
   uint8_t _current_slot_index;
+
+  // オモテ拍のタイミングで確定したメジャー・マイナースワップ
+  bool _minor_swap;
+
+  // オモテ拍のタイミングで確定した半音上げ下げ
+  int8_t _semitone_shift;
+
+  // オモテ拍のタイミングで確定した半音上げ下げ(オンコード用)
+  int8_t _bass_semitone_shift;
 
   // Degreeボタンコマンドの処理
   void procChordDegree(const def::command::command_param_t& command_param, const bool is_pressed);

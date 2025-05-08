@@ -764,8 +764,8 @@ Button Index mapping
     static constexpr const char* wifi_mdns = "kanplay";        // WiFi接続時のmDNS名 kanplay.local
 
     static constexpr const uint32_t app_version_major = 0;
-    static constexpr const uint32_t app_version_minor = 1;
-    static constexpr const uint32_t app_version_patch = 7;
+    static constexpr const uint32_t app_version_minor = 2;
+    static constexpr const uint32_t app_version_patch = 0;
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
@@ -979,6 +979,7 @@ Button Index mapping
       { "sharp[dim]"   , { "♯ [ dim ]"      , nullptr              }, { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_dim  } },
       { "flat[m7_5]"   , { "♭ [ m7-5 ]"    , nullptr              }, { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 } },
       { "sharp[m7_5]"  , { "♯ [ m7-5 ]"     , nullptr              }, { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 } },
+      { "reset loop"   , { "Reset loop"     , "リセットループ"      }, { command::chord_step_reset_request, 1 } },
       { "p1_on"        , { "Part 1 ON"      , "パート1 ON"         }, { command::part_on, 1 } },
       { "p2_on"        , { "Part 2 ON"      , "パート2 ON"         }, { command::part_on, 2 } },
       { "p3_on"        , { "Part 3 ON"      , "パート3 ON"         }, { command::part_on, 3 } },

@@ -420,6 +420,7 @@ protected:
             MIDI_CONTROL_CHANGE_END = MIDI_CONTROL_CHANGE_START + 128,
         };
         // MIDIチャンネルコントロール (ベロシティ128×16チャンネル分 + プログラムチェンジ+チャンネルボリューム×16チャンネル分)
+        // 読み出しには非対応、値をセットすると履歴として取得できる
         reg_midi_out_control_t(void) : registry_base_t(128) {}
 
         void setNoteVelocity(uint8_t channel, uint8_t note, uint8_t value) {

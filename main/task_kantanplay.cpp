@@ -32,7 +32,9 @@ void task_kantanplay_t::task_func(task_kantanplay_t* me)
     do {
       me->_prev_usec = me->_current_usec;
       me->_current_usec = M5.micros();
-      next_usec = std::min(me->autoProc(), me->chordProc());
+      auto next1 = me->autoProc();
+      auto next2 = me->chordProc();
+      next_usec = next1 < next2 ? next1 : next2;
     } while (me->commandProccessor());
 
 #if !defined (M5UNIFIED_PC_BUILD)
@@ -143,6 +145,9 @@ uint32_t task_kantanplay_t::autoProc(void)
         setOnbeatCycle(onbeat_cycle_usec);
 
         updateOffbeatTiming();
+
+        // 次回オフビートのタイミングを今回のオンビートのズレ分を加味して調整する
+        _auto_play_offbeat_remain_usec += remain_usec;
 
         // 次回オフビートのタイミングを次回イベントのタイミングに反映する
         // (これを忘れると運次第でオフビートのタイミングがずれる)
@@ -256,9 +261,9 @@ void task_kantanplay_t::procChordDegree(const def::command::command_param_t& com
   if (is_pressed) { // Degreeボタンを押したタイミングで次のオモテ拍での演奏オプションをセットしておく
     _next_option.degree = degree;
     _next_option.bass_degree = system_registry.chord_play.getChordBassDegree();
-    _next_option.semitone_shift = system_registry.chord_play.getChordSemitone();
-    _next_option.bass_semitone_shift = system_registry.chord_play.getChordBassSemitone();
-    _next_option.minor_swap = system_registry.chord_play.getChordMinorSwap();
+    // _next_option.semitone_shift = system_registry.chord_play.getChordSemitone();
+    // _next_option.bass_semitone_shift = system_registry.chord_play.getChordBassSemitone();
+    // _next_option.minor_swap = system_registry.chord_play.getChordMinorSwap();
   }
 
   const auto auto_play = system_registry.runtime_info.getChordAutoplayState();
@@ -466,6 +471,18 @@ void task_kantanplay_t::chordStepAdvance(void)
       _current_option = _next_option;
       normal_reset = true;
     }
+    auto semitone_shift = system_registry.chord_play.getChordSemitone();
+    auto bass_semitone_shift = system_registry.chord_play.getChordBassSemitone();
+    auto minor_swap = system_registry.chord_play.getChordMinorSwap();
+    if (_semitone_shift != semitone_shift
+     || _bass_semitone_shift != bass_semitone_shift
+     || _minor_swap != minor_swap) {
+      _semitone_shift = semitone_shift;
+      _bass_semitone_shift = bass_semitone_shift;
+      _minor_swap = minor_swap;
+      normal_reset = true;
+    }
+
 
     // ステップのリセット要求があれば先頭に戻す
     if (_step_reset_request) {
@@ -588,11 +605,11 @@ void task_kantanplay_t::chordStepPlay(void)
 
   KANTANMusic_GetMidiNoteNumberOptions options;
   KANTANMusic_GetMidiNoteNumber_SetDefaultOptions(&options);
-  options.minor_swap = _current_option.minor_swap;
-  options.semitone_shift = _current_option.semitone_shift;
+  options.minor_swap = _minor_swap;
+  options.semitone_shift = _semitone_shift;
   options.modifier = system_registry.chord_play.getChordModifier();
   options.bass_degree =  _current_option.bass_degree;
-  options.bass_semitone_shift =  _current_option.bass_semitone_shift;
+  options.bass_semitone_shift =  _bass_semitone_shift;
 
 // M5_LOGE("key: %d, minor_swap: %d, modifier: %d, semitone: %d", key, minor_swap, (int)modifier, semitone);
   for (int part = 0; part < def::app::max_chord_part; ++part) {
@@ -844,6 +861,7 @@ void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& com
 
 void task_kantanplay_t::procChordStepResetRequest(const def::command::command_param_t& command_param, const bool is_pressed)
 {
+  if (!is_pressed) { return; }
   chordStepReset();
 }
 
