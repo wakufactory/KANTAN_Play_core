@@ -52,7 +52,7 @@ void setup() {
     , kanplay_ns::def::app::app_version_major, kanplay_ns::def::app::app_version_minor, kanplay_ns::def::app::app_version_patch);
 
   M5.Power.setExtOutput(true);
-  M5.Power.setChargeCurrent(1200);
+  M5.Power.setChargeCurrent(200);
 
   log_memory(2); M5.delay(16); M5.Display.print("."); kanplay_ns::system_registry.init();
   log_memory(3); M5.delay(16); M5.Display.print("."); task_i2s.start();
