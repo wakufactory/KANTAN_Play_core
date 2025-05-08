@@ -70,10 +70,8 @@ M5_LOGV("file_command_info type:%d file:%d mem:%d ", file_command_info.dir_type,
             if (file_command_info.dir_type != def::app::data_type_t::data_setting) {
               system_registry.popup_notify.setPopup(result, def::notify_type_t::NOTIFY_FILE_SAVE);
             }
-            if (result) {
-              // 保存に成功していれば、未保存の編集の警告表示をクリア
-              system_registry.runtime_info.setSongModified(false);
-            }
+            // 未保存の編集の警告表示を更新する
+            system_registry.checkSongModified();
           }
           break;
         }
