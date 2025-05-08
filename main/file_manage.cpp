@@ -60,27 +60,46 @@ asm (\
   ".section \".text\"\n")
 #endif
 
-// IMPORT_FILE(.rodata, "config_preset/1-1.json", preset_1_1);
-// IMPORT_FILE(.rodata, "config_preset/blank.json", preset_blank);
+IMPORT_FILE(.rodata, "01_Simple_Guitar.json",  preset_01 );
+IMPORT_FILE(.rodata, "02_Simpl_Piano.json"  ,  preset_02 );
+IMPORT_FILE(.rodata, "11_Pop_01.json"       ,  preset_11 );
+IMPORT_FILE(.rodata, "12_Pop_02.json"       ,  preset_12 );
+IMPORT_FILE(.rodata, "13_Pop_03.json"       ,  preset_13 );
+IMPORT_FILE(.rodata, "14_Pop_04.json"       ,  preset_14 );
+IMPORT_FILE(.rodata, "15_Pop_05.json"       ,  preset_15 );
+IMPORT_FILE(.rodata, "16_Pop_06.json"       ,  preset_16 );
+IMPORT_FILE(.rodata, "17_Pop_07.json"       ,  preset_17 );
+IMPORT_FILE(.rodata, "18_Pop_08.json"       ,  preset_18 );
+IMPORT_FILE(.rodata, "19_Pop_09.json"       ,  preset_19 );
+IMPORT_FILE(.rodata, "1A_Pop_10.json"       ,  preset_1A );
+IMPORT_FILE(.rodata, "21_Rock_01.json"      ,  preset_21 );
+IMPORT_FILE(.rodata, "22_Rock_02.json"      ,  preset_22 );
+IMPORT_FILE(.rodata, "23_Rock_03.json"      ,  preset_23 );
+IMPORT_FILE(.rodata, "24_Rock_04.json"      ,  preset_24 );
+IMPORT_FILE(.rodata, "25_Rock_05.json"      ,  preset_25 );
+IMPORT_FILE(.rodata, "26_Rock_06.json"      ,  preset_26 );
+IMPORT_FILE(.rodata, "27_Rock_07.json"      ,  preset_27 );
+IMPORT_FILE(.rodata, "31_Folk_01.json"      ,  preset_31 );
+IMPORT_FILE(.rodata, "32_Folk_02.json"      ,  preset_32 );
+IMPORT_FILE(.rodata, "41_Ballade_01.json"   ,  preset_41 );
+IMPORT_FILE(.rodata, "42_Ballade_02.json"   ,  preset_42 );
+IMPORT_FILE(.rodata, "43_Ballade_03.json"   ,  preset_43 );
+IMPORT_FILE(.rodata, "44_Ballade_04.json"   ,  preset_44 );
+IMPORT_FILE(.rodata, "45_Ballade_05.json"   ,  preset_45 );
+IMPORT_FILE(.rodata, "51_Dance_01.json"     ,  preset_51 );
+IMPORT_FILE(.rodata, "52_Dance_02.json"     ,  preset_52 );
+IMPORT_FILE(.rodata, "53_Dance_03.json"     ,  preset_53 );
+IMPORT_FILE(.rodata, "54_Dance_04.json"     ,  preset_54 );
+IMPORT_FILE(.rodata, "61_Punk_01.json"      ,  preset_61 );
+IMPORT_FILE(.rodata, "62_Punk_02.json"      ,  preset_62 );
+IMPORT_FILE(.rodata, "71_Game_01.json"      ,  preset_71 );
+IMPORT_FILE(.rodata, "72_Game_02.json"      ,  preset_72 );
+IMPORT_FILE(.rodata, "81_Samba_1.json"      ,  preset_81 );
+IMPORT_FILE(.rodata, "82_Ska_1.json"        ,  preset_82 );
+IMPORT_FILE(.rodata, "83_Orchestra_1.json"  ,  preset_83 );
+IMPORT_FILE(.rodata, "84_Orchestra_2.json"  ,  preset_84 );
+IMPORT_FILE(.rodata, "99_Sample.json"       ,  preset_99 );
 
-IMPORT_FILE(.rodata, "01_Pop_1.json"      , preset_01 );
-IMPORT_FILE(.rodata, "02_Pop_2.json"      , preset_02 );
-IMPORT_FILE(.rodata, "03_Pop_3.json"      , preset_03 );
-IMPORT_FILE(.rodata, "04_Pop_4.json"      , preset_04 );
-IMPORT_FILE(.rodata, "05_Ballade_1.json"  , preset_05 );
-IMPORT_FILE(.rodata, "06_Ballade_2.json"  , preset_06 );
-IMPORT_FILE(.rodata, "07_Ballade_3.json"  , preset_07 );
-IMPORT_FILE(.rodata, "08_Folk_1.json"     , preset_08 );
-IMPORT_FILE(.rodata, "09_Folk_2.json"     , preset_09 );
-IMPORT_FILE(.rodata, "10_Rock_1.json"     , preset_10 );
-IMPORT_FILE(.rodata, "11_SlowRock_1.json" , preset_11 );
-IMPORT_FILE(.rodata, "12_Punk_1.json"     , preset_12 );
-IMPORT_FILE(.rodata, "13_Punk_2.json"     , preset_13 );
-IMPORT_FILE(.rodata, "14_Dance_1.json"    , preset_14 );
-IMPORT_FILE(.rodata, "15_Dance_2.json"    , preset_15 );
-IMPORT_FILE(.rodata, "16_Samba_1.json"    , preset_16 );
-IMPORT_FILE(.rodata, "17_Game_1.json"     , preset_17 );
-IMPORT_FILE(.rodata, "99_Sample.json"     , preset_99 );
 
 namespace kanplay_ns {
 
@@ -90,24 +109,45 @@ struct incbin_file_t {
   size_t size;
 };
 static const incbin_file_t incbin_files[] = {
-  { filename_preset_01 , preset_01, (size_t)sizeof_preset_01 },
-  { filename_preset_02 , preset_02, (size_t)sizeof_preset_02 },
-  { filename_preset_03 , preset_03, (size_t)sizeof_preset_03 },
-  { filename_preset_04 , preset_04, (size_t)sizeof_preset_04 },
-  { filename_preset_05 , preset_05, (size_t)sizeof_preset_05 },
-  { filename_preset_06 , preset_06, (size_t)sizeof_preset_06 },
-  { filename_preset_07 , preset_07, (size_t)sizeof_preset_07 },
-  { filename_preset_08 , preset_08, (size_t)sizeof_preset_08 },
-  { filename_preset_09 , preset_09, (size_t)sizeof_preset_09 },
-  { filename_preset_10 , preset_10, (size_t)sizeof_preset_10 },
-  { filename_preset_11 , preset_11, (size_t)sizeof_preset_11 },
-  { filename_preset_12 , preset_12, (size_t)sizeof_preset_12 },
-  { filename_preset_13 , preset_13, (size_t)sizeof_preset_13 },
-  { filename_preset_14 , preset_14, (size_t)sizeof_preset_14 },
-  { filename_preset_15 , preset_15, (size_t)sizeof_preset_15 },
-  { filename_preset_16 , preset_16, (size_t)sizeof_preset_16 },
-  { filename_preset_17 , preset_17, (size_t)sizeof_preset_17 },
-  { filename_preset_99 , preset_99, (size_t)sizeof_preset_99 },
+  { filename_preset_01, preset_01, (size_t)sizeof_preset_01 },
+  { filename_preset_02, preset_02, (size_t)sizeof_preset_02 },
+  { filename_preset_11, preset_11, (size_t)sizeof_preset_11 },
+  { filename_preset_12, preset_12, (size_t)sizeof_preset_12 },
+  { filename_preset_13, preset_13, (size_t)sizeof_preset_13 },
+  { filename_preset_14, preset_14, (size_t)sizeof_preset_14 },
+  { filename_preset_15, preset_15, (size_t)sizeof_preset_15 },
+  { filename_preset_16, preset_16, (size_t)sizeof_preset_16 },
+  { filename_preset_17, preset_17, (size_t)sizeof_preset_17 },
+  { filename_preset_18, preset_18, (size_t)sizeof_preset_18 },
+  { filename_preset_19, preset_19, (size_t)sizeof_preset_19 },
+  { filename_preset_1A, preset_1A, (size_t)sizeof_preset_1A },
+  { filename_preset_21, preset_21, (size_t)sizeof_preset_21 },
+  { filename_preset_22, preset_22, (size_t)sizeof_preset_22 },
+  { filename_preset_23, preset_23, (size_t)sizeof_preset_23 },
+  { filename_preset_24, preset_24, (size_t)sizeof_preset_24 },
+  { filename_preset_25, preset_25, (size_t)sizeof_preset_25 },
+  { filename_preset_26, preset_26, (size_t)sizeof_preset_26 },
+  { filename_preset_27, preset_27, (size_t)sizeof_preset_27 },
+  { filename_preset_31, preset_31, (size_t)sizeof_preset_31 },
+  { filename_preset_32, preset_32, (size_t)sizeof_preset_32 },
+  { filename_preset_41, preset_41, (size_t)sizeof_preset_41 },
+  { filename_preset_42, preset_42, (size_t)sizeof_preset_42 },
+  { filename_preset_43, preset_43, (size_t)sizeof_preset_43 },
+  { filename_preset_44, preset_44, (size_t)sizeof_preset_44 },
+  { filename_preset_45, preset_45, (size_t)sizeof_preset_45 },
+  { filename_preset_51, preset_51, (size_t)sizeof_preset_51 },
+  { filename_preset_52, preset_52, (size_t)sizeof_preset_52 },
+  { filename_preset_53, preset_53, (size_t)sizeof_preset_53 },
+  { filename_preset_54, preset_54, (size_t)sizeof_preset_54 },
+  { filename_preset_61, preset_61, (size_t)sizeof_preset_61 },
+  { filename_preset_62, preset_62, (size_t)sizeof_preset_62 },
+  { filename_preset_71, preset_71, (size_t)sizeof_preset_71 },
+  { filename_preset_72, preset_72, (size_t)sizeof_preset_72 },
+  { filename_preset_81, preset_81, (size_t)sizeof_preset_81 },
+  { filename_preset_82, preset_82, (size_t)sizeof_preset_82 },
+  { filename_preset_83, preset_83, (size_t)sizeof_preset_83 },
+  { filename_preset_84, preset_84, (size_t)sizeof_preset_84 },
+  { filename_preset_99, preset_99, (size_t)sizeof_preset_99 },
 };
   
   
