@@ -779,6 +779,7 @@ void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& com
   case def::command::sound_effect_t::testplay:
     {
       int step = system_registry.chord_play.getPartStep(part_index);
+      if (step < 0) { step = 0; }
       switch (chord_part->arpeggio.getStyle(step))
       {
       default: break;
