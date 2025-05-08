@@ -859,7 +859,7 @@ size_t system_registry_t::song_data_t::saveText(uint8_t* data_buffer, size_t dat
         case datafile_key_t::kwd_Position: val = pi->part_info.getPosition();           break;
         case datafile_key_t::kwd_Voicing:
           {
-            len = snprintf(buf, 32, "%s\t%s\n", datafile_key[k], KANTANMusic_GetVoicingName(pi->part_info.getVoicing()));
+            len = snprintf(buf, 32, "%s\t%s\n", datafile_key[k], def::play::GetVoicingName(pi->part_info.getVoicing()));
             buf += len;
             result += len;
             len = 0;
@@ -955,7 +955,7 @@ static KANTANMusic_Voicing getVoicing(const char* voicing)
 {
   if (voicing != nullptr) {
     for (int i = 0; i < KANTANMusic_MAX_VOICING; ++i) {
-      if (strcmp(voicing, KANTANMusic_GetVoicingName((KANTANMusic_Voicing)i)) == 0) {
+      if (strcmp(voicing, def::play::GetVoicingName((KANTANMusic_Voicing)i)) == 0) {
         return (KANTANMusic_Voicing)i;
       }
     }
@@ -1038,7 +1038,7 @@ size_t system_registry_t::song_data_t::saveSongJSON(uint8_t* data_buffer, size_t
       part_info["volume"] = reg_part->part_info.getVolume();
       part_info["tone"] = reg_part->part_info.getTone();
       part_info["octave"] = reg_part->part_info.getPosition();
-      part_info["voicing"] = KANTANMusic_GetVoicingName(reg_part->part_info.getVoicing());
+      part_info["voicing"] = def::play::GetVoicingName(reg_part->part_info.getVoicing());
       part_info["loop_step"] = reg_part->part_info.getLoopStep();
       part_info["anchor_step"] = reg_part->part_info.getAnchorStep();
       part_info["stroke_speed"] = reg_part->part_info.getStrokeSpeed();

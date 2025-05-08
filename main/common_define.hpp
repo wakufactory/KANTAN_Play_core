@@ -675,6 +675,19 @@ Button Index mapping
       arpeggio_style_max
     };
 
+    static const char* GetVoicingName(KANTANMusic_Voicing voicing) {
+      switch (voicing) {
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Close:                  return "Close";
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Guitar:                 return "Guitar";
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Static:                 return "Static";
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Ukulele:                return "Ukulele";
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_Major:           return "M-Major";
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_MajorPentatonic: return "M-Penta";
+        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_Chromatic:       return "M-Chroma";
+        default: return "----";
+      }
+    }
+
     namespace note {
       static constexpr const size_t max_note_scale = 5;
       static constexpr const char* note_scale_name_table[max_note_scale] = {
@@ -765,7 +778,7 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 2;
-    static constexpr const uint32_t app_version_patch = 0;
+    static constexpr const uint32_t app_version_patch = 1;
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";

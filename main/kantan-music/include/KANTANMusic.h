@@ -13,10 +13,20 @@ extern "C" {
  *
  */
 typedef enum {
-    KANTANMusic_Voicing_Close = 0,
-    KANTANMusic_Voicing_Guitar,
-    KANTANMusic_Voicing_Static,
-    KANTANMusic_Voicing_Ukulele,
+    KANTANMusic_Voicing_Close = 0, /**< クローズドボイシング（ピアノなど） */
+    KANTANMusic_Voicing_Guitar,    /**< ギター */
+    KANTANMusic_Voicing_Static,    /**< Staticボイシング（ベースライン向け） */
+    KANTANMusic_Voicing_Ukulele,   /**< ウクレレ */
+
+    /** 以下はメロディボイシング。選択したスケールに応じて、メロディ演奏に適したノート番号を返します。
+     * メロディボイシングでは、KANTANMusic_GetMidiNoteNumber 関数の引数のうち、以下のものだけ使用します。他の引数は無視されます。
+     * - pitch: メロディの構成音のうち、低い方から何番目の音を得るか。1 以上 6 以下の整数。
+     * - key: C/Am から数えて何番目のキーか。0 以上 11 以下の整数。
+     * - position: メロディのポジションを1/12オクターブ単位で指定する。-4: 4/12(=1/3)オクターブ下のポジションのメロディ、0: そのまま、1: 1/12オクターブ上のポジションのメロディ。-36 以上 36 以下の整数。
+     */
+    KANTANMusic_Voicing_Melody_Major,       /**< メジャースケールのメロディボイシング */
+    KANTANMusic_Voicing_Melody_MajorPentatonic, /**< メジャーペンタトニックスケールのメロディボイシング */
+    KANTANMusic_Voicing_Melody_Chromatic,       /**< クロマティックスケールのメロディボイシング */
     KANTANMusic_MAX_VOICING,
 } KANTANMusic_Voicing;
 
@@ -41,17 +51,6 @@ typedef enum {
 } KANTANMusic_Modifier;
 
 /**
- * @brief
- * メロディの構成音をどのように作るか（スケール）の種類
- */
-typedef enum {
-    KANTANMusic_Major = 0,          /**< メジャースケール */
-    KANTANMusic_MajorPentatonic,    /**< メジャーペンタトニックスケール */
-    KANTANMusic_Chromatic,          /**< クロマティックスケール */
-    KANTANMusic_MAX_SCALE,
-} KANTANMusic_Scale;
-
-/**
  * @brief KANTANMusic_GetMidiNoteNumber関数に指定するオプションをまとめた構造体
  */
 typedef struct
@@ -74,7 +73,10 @@ typedef struct
  * - minor_swap: false
  * - modifier: KANTANMusic_Modifier_None
  * - semitone_shift: 0
- *
+ * - bass_degree: 0
+ * - bass_semitone_shift: 0
+ * - position: 0
+ * - minor_swap: false
  */
 #define KANTANMusic_GetMidiNoteNumber_SetDefaultOptions(options_pointer) \
     {                                                                    \
@@ -115,24 +117,6 @@ typedef struct
 uint8_t KANTANMusic_GetMidiNoteNumber(
     int pitch, int degree, int key,
     const KANTANMusic_GetMidiNoteNumberOptions* options);
-
-/**
- * @brief 列挙体KANTANMusic_Voicingの各列挙子の名前を返す
- * @param voicing 名前を取得したいKANTANMusic_Voicingの列挙子
- * @return const char* 引数に指定された列挙子の名前
- */
-const char* KANTANMusic_GetVoicingName(KANTANMusic_Voicing voicing);
-
-/**
- * @brief
- * 指定したキーでのメロディ演奏に適したMIDIノート番号を返す
- * @param pitch メロディの構成音のうち、低い方から何番目の音を得るか。1 以上 6 以下の整数。
- * @param key C/Am から数えて何番目のキーか。0 以上 11 以下の整数。
- * @param position メロディのポジションを1/12オクターブ単位で指定する。-4: 4/12(=1/3)オクターブ下のポジションのメロディ、0: そのまま、1: 1/12オクターブ上のポジションのメロディ。-36 以上 36 以下の整数。
- * @param scale メロディのスケールをKANTANMusic_Scale列挙体から選ぶ。
- */
-uint8_t KANTANMusic_GetMidiNoteNumberForMelody(
-    int pitch, int key, int position, KANTANMusic_Scale scale);
 
 #ifdef __cplusplus
 }

@@ -1908,7 +1908,7 @@ public:
       auto voicing = part_info->getVoicing();
       if (_voicing != voicing) {
         _voicing = voicing;
-        _voicing_name = KANTANMusic_GetVoicingName(voicing);
+        _voicing_name = def::play::GetVoicingName(voicing);
         subbutton_update = true;
       }
       int velo = system_registry.runtime_info.getEditVelocity();

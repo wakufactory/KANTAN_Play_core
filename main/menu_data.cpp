@@ -622,13 +622,13 @@ struct mi_voicing_t : public mi_normal_t {
   {}
 protected:
   const char* getSelectorText(size_t index) const override {
-    return KANTANMusic_GetVoicingName(static_cast<KANTANMusic_Voicing>(index));
+    return def::play::GetVoicingName(static_cast<KANTANMusic_Voicing>(index));
   }
   size_t getSelectorCount(void) const override { return KANTANMusic_Voicing::KANTANMusic_MAX_VOICING; }
 
   const char* getValueText(void) const override
   {
-    return KANTANMusic_GetVoicingName(static_cast<KANTANMusic_Voicing>(getValue() - getMinValue()));
+    return def::play::GetVoicingName(static_cast<KANTANMusic_Voicing>(getValue() - getMinValue()));
   }
 
   int getValue(void) const override
