@@ -9,6 +9,7 @@ namespace kanplay_ns {
 menu_control_t menu_control;
 
 static std::string _title_text_buffer;
+static int _input_number_result;
 
 static menu_item_ptr_array getMenuArray(def::menu_category_t category);
 
@@ -80,6 +81,7 @@ bool menu_item_t::exit(void) const
 
 bool menu_item_t::enter(void) const
 {
+  _input_number_result = 0;
   auto array = getMenuArray(_category);
 
   system_registry.menu_status.setSelectIndex(_level - 1, _seq);
@@ -107,12 +109,26 @@ struct mi_tree_t : public menu_item_t {
 
   bool inputNumber(uint8_t number) const override
   {
-    size_t cursor_pos = number - getMinValue();
-
     auto array = getMenuArray(_category);
 
     std::vector<uint16_t> child_list;
     auto child_count = getSubMenuIndexList(&child_list, array, _seq);
+    int max_value = child_count + getMinValue();
+
+    int tmp = (_input_number_result * 10) + number;
+
+    if (tmp > max_value)
+    {
+      auto div = 10000;
+      if      (max_value < 10) { div = 10;}
+      else if (max_value < 100) { div = 100; }
+      else if (max_value < 1000) { div = 1000; }
+      tmp %= div;
+    }
+
+    _input_number_result = tmp;
+
+    size_t cursor_pos = tmp - getMinValue();
 
     if (cursor_pos < child_count) {
       int enter_index = child_list[cursor_pos];
@@ -174,7 +190,6 @@ struct mi_normal_t : public menu_item_t {
   size_t getSelectorCount(void) const override { return getMaxValue() - getMinValue() + 1; }
 
   bool enter(void) const override {
-    _input_number_result = 0;
     _selecting_value = getValue();
     auto min_value = getMinValue();
     if (_selecting_value < min_value) { _selecting_value = min_value; }
@@ -229,10 +244,8 @@ struct mi_normal_t : public menu_item_t {
 
 
 protected:
-  static int _input_number_result;
   static int _selecting_value;
 };
-int mi_normal_t::_input_number_result = 0;
 int mi_normal_t::_selecting_value = 0;
 
 
