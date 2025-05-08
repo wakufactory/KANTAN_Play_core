@@ -1528,7 +1528,7 @@ static constexpr menu_item_ptr menu_system[] = {
   (const mi_load_file_t     []){{ def::menu_category_t::menu_system,  3,   3 , { "Preset Songs"   , "プリセットソング" }, def::app::data_type_t::data_song_preset }},
   (const mi_load_file_t     []){{ def::menu_category_t::menu_system,  4,   3 , { "Extra Songs (SD)","エクストラソング(SD)" }, def::app::data_type_t::data_song_extra }},
   (const mi_load_file_t     []){{ def::menu_category_t::menu_system,  5,   3 , { "User Songs (SD)", "ユーザソング(SD)"}, def::app::data_type_t::data_song_users }},
-  (const mi_save_t          []){{ def::menu_category_t::menu_system,  6,  2  , { "Save"           , "上書き保存"    }, def::app::data_type_t::data_song_users }},
+  (const mi_save_t          []){{ def::menu_category_t::menu_system,  6,  2  , { "Save"           , "保存"          }, def::app::data_type_t::data_song_users }},
   (const mi_tree_t          []){{ def::menu_category_t::menu_system,  7, 1   , { "Slot Setting"   , "スロット設定"  }}},
   (const mi_slot_playmode_t []){{ def::menu_category_t::menu_system,  8,  2  , { "Play Mode"      , "演奏モード"    }}},
   (const mi_slot_key_t      []){{ def::menu_category_t::menu_system,  9,  2  , { "Key Modulation" , "キー転調"      }}},
@@ -1765,7 +1765,7 @@ static constexpr menu_item_ptr menu_file[] = {
   (const mi_load_file_t   []){{ def::menu_category_t::menu_file,  2, 1 , { "Load Preset"    , "プリセット読込"  }, def::app::data_type_t::data_song_extra }},
   (const mi_save_t        []){{ def::menu_category_t::menu_file,  3, 1 , { "Save"           , "保存"           }, def::app::data_type_t::data_song_users }},
   // (const mi_save_new_t    []){{ def::menu_category_t::menu_file,  5,  2, { "New File"       , "新規作成"        }, def::app::data_type_t::data_song_users }},
-  // (const mi_filelist_t    []){{ def::menu_category_t::menu_file,  4, 1 , { "Save(Overwrite)", "上書き保存"      }, def::app::data_type_t::data_song_users}},
+  // (const mi_filelist_t    []){{ def::menu_category_t::menu_file,  4, 1 , { "Save(Overwrite)", "保存"            }, def::app::data_type_t::data_song_users}},
   nullptr, // end of menu
 };
 
