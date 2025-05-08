@@ -355,16 +355,18 @@ void task_kantanplay_t::chordBeat(const bool on_beat)
 
 void task_kantanplay_t::setOnbeatCycle(int32_t usec)
 {
+  uint32_t song_tempo = getOnbeatCycleBySongTempo();
+
+  // 一定時間経過後にアルペジエータを先頭に戻す時間を更新する
+  _arpeggio_reset_remain_usec = song_tempo * def::app::arpeggio_reset_timeout_beats;
+
   // ステップが強制リセットされた後や無操作時間が長かった場合などは値が極端に小さくなるので、
   // ここで指定値を捨ててソングデータのテンポに基づいた値に変更する
   if (usec < 16384) {
-    usec = getOnbeatCycleBySongTempo();
+    usec = song_tempo;
     _reactive_onbeat_usec = _current_usec;
   }
   _reactive_onbeat_cycle_usec = usec;
-
-  // 一定時間経過後にアルペジエータを先頭に戻す時間を更新する
-  _arpeggio_reset_remain_usec = usec * def::app::arpeggio_reset_timeout_beats;
 }
 
 // オンビート演奏の間隔を取得する
@@ -535,8 +537,9 @@ void task_kantanplay_t::chordStepAdvance(void)
           note_off_flag = true;
           current_step = 0;
         } else {
-          // 終端に達していたら先頭に戻す
+          // 現在位置より先のオモテ拍の位置を求める
           current_step = ((current_step + step_per_beat) / step_per_beat) * step_per_beat;
+          // 終端に達していたら先頭に戻す
           if (current_step > loop_step) {
             current_step = 0;
           }
@@ -572,9 +575,9 @@ void task_kantanplay_t::chordStepAdvance(void)
           }
         }
       }
-      // パートが無効化している場合はステップを0に設定しておく
+      // パートが無効化している場合はステップを-1に設定しておく
       if (current_enable == false) {
-        current_step = 0;
+        current_step = -1;
       }
       system_registry.chord_play.setPartStep(i, current_step);
     }
@@ -745,6 +748,7 @@ void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& com
   auto part_info = &chord_part->part_info;
   int pitch_index = system_registry.chord_play.getCursorY();
   int step = system_registry.chord_play.getPartStep(part_index);
+  if (step < 0) { step = 0; }
 
   int pitch_last = pitch_index + 1;
   uint8_t midi_ch = part_index;
@@ -872,7 +876,7 @@ void task_kantanplay_t::chordStepReset(void)
   const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
   if (_current_beat_index || step_per_beat < 2) {
     for (int i = 0; i < def::app::max_chord_part; ++i) {
-      system_registry.chord_play.setPartStep(i, 0);
+      system_registry.chord_play.setPartStep(i, -1);
     }
   }
 }

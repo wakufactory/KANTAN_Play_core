@@ -1443,7 +1443,9 @@ public:
       _isEmpty = system_registry.current_slot->chord_part[_part_index].arpeggio.isEmpty();
     }
 
-    auto highlight_target = system_registry.chord_play.getPartStep(_part_index) << 8;
+    int highlight_target = system_registry.chord_play.getPartStep(_part_index);
+    if (highlight_target < 0) { highlight_target = 0; }
+    highlight_target <<= 8;
     if (x_highlight_256 != highlight_target) {
       if (_isDetailMode) {
         auto before_rect = getHighlightRect(offset_x, offset_y);
@@ -1946,7 +1948,8 @@ public:
         param->addInvalidatedRect({offset_x, offset_y, _client_rect.w, _client_rect.h});
       }
 
-      auto cx = system_registry.chord_play.getPartStep(_part_index);
+      int cx = system_registry.chord_play.getPartStep(_part_index);
+      if (cx < 0) { cx = 0; }
       auto cy = system_registry.chord_play.getCursorY() + 1;
       changePage(cx >> 3);
       if (_cursor_x != cx || _cursor_y != cy || (getClientRect() != getTargetRect())) {

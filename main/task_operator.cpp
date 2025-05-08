@@ -713,6 +713,9 @@ void task_operator_t::procEditFunction(const def::command::command_param_t& comm
   auto part_index = system_registry.chord_play.getEditTargetPart();
   auto part = &system_registry.current_slot->chord_part[part_index];
   int cursor_x = system_registry.chord_play.getPartStep(part_index);
+  if (cursor_x < 0) {
+    cursor_x = 0;
+  }
   int cursor_y = system_registry.chord_play.getCursorY();
   int new_x = cursor_x;
   int new_y = cursor_y;
