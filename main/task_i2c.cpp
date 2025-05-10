@@ -86,6 +86,11 @@ TODO:CoreS3でのSDカード挿抜状態判定を追加する
           system_registry.operator_command.addQueue( { def::command::power_control, 0 } );
         }
 
+        if (M5.BtnPWR.wasClicked() && M5.BtnPWR.getClickCount() == 8) {
+          system_registry.runtime_info.setDeveloperMode(true);
+          system_registry.popup_notify.setPopup(true, def::notify_type_t::NOTIFY_DEVELOPER_MODE);
+        }
+
 #if 0 // for DEBUG
         // これはデバッグ目的で、電源ボタンのクリックに割り当てる特殊操作
         // 謎のピー音放出バグが発生したときにGPIO設定を変更することで音が止まるかを確認するためのコード

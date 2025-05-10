@@ -450,6 +450,8 @@ public:
         t = "Clear all notes : "; break;
       case def::notify_type_t::NOTIFY_ALL_RESET:
         t = "All Reset : "; break;
+      case def::notify_type_t::NOTIFY_DEVELOPER_MODE:
+        t = "Developer : "; break;
       }
       if (t) {
         _text = t;
@@ -977,6 +979,7 @@ struct ui_main_buttons_t : public ui_base_t
     char _text[def::hw::max_main_button][8] = { { 0 }, };
     uint32_t _btns_color[def::hw::max_main_button] = { 0, };
     uint32_t _text_color[def::hw::max_main_button] = { 0, };
+    uint8_t _text_width[def::hw::max_main_button] = { 0, };
     uint32_t _btn_bitmask = 0x00;
     uint8_t _play_mode = 0x80;
     uint8_t _master_key = 0x80;
@@ -1028,6 +1031,7 @@ struct ui_main_buttons_t : public ui_base_t
     if (xor_bitmask) {
       flg_update = true;
     }
+    _gfx->setTextSize(1, 2);
     for (int i = 0; i < def::hw::max_main_button; ++i) {
       uint32_t color = system_registry.rgbled_control.getColor(i);
       if (_btns_color[i] != color || xor_bitmask & (1 << i)) {
@@ -1047,12 +1051,18 @@ struct ui_main_buttons_t : public ui_base_t
         _text_lower[i] = "";
 
         auto cp_pair = system_registry.command_mapping_current.getCommandParamArray(i);
-        auto command_param = cp_pair.array[0];
-        uint8_t param = command_param.param;
+        def::command::command_param_t command_param;
+        int pindex = 0;
+        bool hit = true;
+        for (int j = 0; cp_pair.array[j].command != def::command::none; ++j) {
+          pindex = j;
+          command_param = cp_pair.array[j];
+          hit &= system_registry.working_command.check(command_param);
+        }
         auto command = command_param.command;
         uint32_t text_color = system_registry.color_setting.getButtonPressedTextColor();
         if ((_btn_bitmask & (1 << i)) == 0) {
-          if (system_registry.working_command.check(command_param)) {
+          if (hit) {
             text_color = system_registry.color_setting.getButtonWorkingTextColor();
           } else {
             text_color = system_registry.color_setting.getButtonDefaultTextColor();
@@ -1065,111 +1075,134 @@ struct ui_main_buttons_t : public ui_base_t
         {
           auto table = def::command::command_name_table[command];
           if (table != nullptr) {
-            name = table[param];
+            name = table[command_param.param];
           }
         }
 
-        switch (command) {
-        default:
-          break;
-
-        case def::command::drum_button:
-          { // ドラムモードボタンの場合の表示名処理
-            uint8_t drum_index = param - 1;
-            uint8_t note = system_registry.drum_mapping.get8(drum_index);
-            name = def::midi::drum_name_tbl[note];
+        if (pindex != 0) {
+          for (auto data: def::command::button_text_table) {
+            if (data.command == cp_pair) {
+              name = data.text;
+              _text_lower[i] = data.lower;
+              _text_upper[i] = data.upper;
+              break;
+            }
           }
-          break;
+        } else {
+          switch (command) {
+          default:
+            break;
 
-        case def::command::note_button:
-          { // ノートモードボタンの場合の表示名処理
-            uint8_t note_button_index = param - 1;
-            int32_t note = def::play::note::note_scale_note_table[note_scale][note_button_index];
-            note += slot_key;
-            if (note >= 0 && note < 128) {
-              int name_index = note % def::app::max_play_key;
-              auto note_name = def::app::note_name_table[name_index];
-              if (note_name != nullptr) {
-                name = def::app::note_name_table[name_index];
+          case def::command::drum_button:
+            { // ドラムモードボタンの場合の表示名処理
+              uint8_t drum_index = command_param.param - 1;
+              uint8_t note = system_registry.drum_mapping.get8(drum_index);
+              name = def::midi::drum_name_tbl[note];
+            }
+            break;
+
+          case def::command::note_button:
+            { // ノートモードボタンの場合の表示名処理
+              uint8_t note_button_index = command_param.param - 1;
+              int32_t note = def::play::note::note_scale_note_table[note_scale][note_button_index];
+              note += slot_key;
+              if (note >= 0 && note < 128) {
+                int name_index = note % def::app::max_play_key;
+                auto note_name = def::app::note_name_table[name_index];
+                if (note_name != nullptr) {
+                  name = def::app::note_name_table[name_index];
+                }
               }
             }
-          }
-          break;
+            break;
 
-        case def::command::chord_modifier:
-          {
-#if defined ( KANTAN_USE_MODIFIER_6_AS_7M7 )
-            // 7とM7の同時押し時に6に表示を変換する
-            auto table = def::command::command_name_table[command];
-            if (param == KANTANMusic_Modifier_7) {
-              if (system_registry.working_command.check( { def::command::chord_modifier, KANTANMusic_Modifier_M7 } )) {
-                name = table[KANTANMusic_Modifier_6];
+          case def::command::chord_modifier:
+            {
+  #if defined ( KANTAN_USE_MODIFIER_6_AS_7M7 )
+              // 7とM7の同時押し時に6に表示を変換する
+              auto table = def::command::command_name_table[command];
+              if (command_param.param == KANTANMusic_Modifier_7) {
+                if (system_registry.working_command.check( { def::command::chord_modifier, KANTANMusic_Modifier_M7 } )) {
+                  name = table[KANTANMusic_Modifier_6];
+                }
               }
-            }
-            if (param == KANTANMusic_Modifier_M7) {
-              if (system_registry.working_command.check( { def::command::chord_modifier, KANTANMusic_Modifier_7 } )) {
-                name = table[KANTANMusic_Modifier_6];
+              if (command_param.param == KANTANMusic_Modifier_M7) {
+                if (system_registry.working_command.check( { def::command::chord_modifier, KANTANMusic_Modifier_7 } )) {
+                  name = table[KANTANMusic_Modifier_6];
+                }
               }
+  #endif
             }
-#endif
+            break;
+
+          case def::command::chord_degree:
+            {
+              // 各キーに対して画面の表示をフラットに統一するかシャープに統一するかの分岐テーブル (0=flat / 1=sharp)
+              static constexpr const uint8_t note_flat_sharp_tbl[12] =
+              { 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, };
+
+              // 各演奏ボタンに対してマイナー符号を付与するか分岐 (0=メジャー / 1=マイナー)
+              static constexpr const uint8_t button_minor_tbl[7] =
+              { 0, 1, 1, 0, 0, 1, 1, };
+
+              KANTANMusic_GetMidiNoteNumberOptions options;
+              KANTANMusic_GetMidiNoteNumber_SetDefaultOptions(&options);
+
+              options.minor_swap = _minor_swap;
+              options.semitone_shift = _semitone;
+
+              // auto pc = param->play_control;
+              uint8_t note = KANTANMusic_GetMidiNoteNumber
+                ( 1
+                , command_param.param
+                , slot_key
+                , &options
+                );
+              note %= 12;
+              bool is_minor = false;
+              if (_modifier == KANTANMusic_Modifier_dim
+              || _modifier == KANTANMusic_Modifier_sus4
+              || _modifier == KANTANMusic_Modifier_aug) {
+                is_minor = false;
+              }
+              else
+              if (_semitone == 0) {
+                is_minor = button_minor_tbl[command_param.param - 1];
+                if (_minor_swap) { is_minor = !is_minor; }
+              }
+
+              auto notename = def::app::note_name_table[note];
+              /// 12個の音階に対して半音部分を♭に置き換えるか判定処理
+              if (notename[1] != 0x00) {
+                bool sharp = note_flat_sharp_tbl[_master_key];
+                notename = def::app::note_name_table[note + (sharp ? -1 : 1)];
+                _text_upper[i] = sharp ? "♯" : "♭";
+              }
+              _text_lower[i] = (is_minor) ? "m" : " ";
+              snprintf(_text[i], sizeof(_text[i]), "%d %s", command_param.param, notename);
+              name = nullptr;
+            }
+            break;
           }
-          break;
 
-        case def::command::chord_degree:
-          {
-            // 各キーに対して画面の表示をフラットに統一するかシャープに統一するかの分岐テーブル (0=flat / 1=sharp)
-            static constexpr const uint8_t note_flat_sharp_tbl[12] =
-            { 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, };
-
-            // 各演奏ボタンに対してマイナー符号を付与するか分岐 (0=メジャー / 1=マイナー)
-            static constexpr const uint8_t button_minor_tbl[7] =
-            { 0, 1, 1, 0, 0, 1, 1, };
-
-            KANTANMusic_GetMidiNoteNumberOptions options;
-            KANTANMusic_GetMidiNoteNumber_SetDefaultOptions(&options);
-
-            options.minor_swap = _minor_swap;
-            options.semitone_shift = _semitone;
-
-            // auto pc = param->play_control;
-            uint8_t note = KANTANMusic_GetMidiNoteNumber
-              ( 1
-              , param
-              , slot_key
-              , &options
-              );
-            note %= 12;
-            bool is_minor = false;
-            if (_modifier == KANTANMusic_Modifier_dim
-            || _modifier == KANTANMusic_Modifier_sus4
-            || _modifier == KANTANMusic_Modifier_aug) {
-              is_minor = false;
-            }
-            else
-            if (_semitone == 0) {
-              is_minor = button_minor_tbl[param - 1];
-              if (_minor_swap) { is_minor = !is_minor; }
-            }
-
-            auto notename = def::app::note_name_table[note];
-            /// 12個の音階に対して半音部分を♭に置き換えるか判定処理
-            if (notename[1] != 0x00) {
-              bool sharp = note_flat_sharp_tbl[_master_key];
-              notename = def::app::note_name_table[note + (sharp ? -1 : 1)];
-              _text_upper[i] = sharp ? "♯" : "♭";
-            }
-            if (is_minor) {
-              _text_lower[i] = "m";
-            }
-            snprintf(_text[i], sizeof(_text[i]), "%d %s ", param, notename);
-            name = nullptr;
-          }
-          break;
         }
-
         if (name != nullptr) {
           snprintf(_text[i], sizeof(_text[i]), "%s", name);
         }
+
+        int tw = _gfx->textWidth(_text[i]);
+        int lower_width = 0;
+        int upper_width = 0;
+        if (_text_lower[i] != nullptr) {
+          lower_width = _gfx->textWidth(_text_lower[i]);
+        }
+        if (_text_upper[i] != nullptr) {
+          upper_width = _gfx->textWidth(_text_upper[i]);
+        }
+        if (lower_width < upper_width) {
+          lower_width = upper_width;
+        }
+        _text_width[i] = tw + lower_width;
       }
     }
   }
@@ -1186,6 +1219,31 @@ struct ui_main_buttons_t : public ui_base_t
   void draw_impl(draw_param_t *param, M5Canvas *canvas, int32_t offset_x,
                           int32_t offset_y, const rect_t *clip_rect) override
   {
+    canvas->setTextDatum(m5gfx::datum_t::middle_left);
+    for (int i = 0; i < def::hw::max_main_button; ++i) {
+      auto rect = getButtonRect(i, offset_x, offset_y);
+      int xs = rect.x;
+      int ys = rect.y;
+      if (!clip_rect->isIntersect(rect)) { continue; }
+
+      draw_button(canvas, xs, ys, rect.w, rect.h, _btns_color[i]);
+      int y = ys + (rect.h >> 1) - 1;
+
+      canvas->setTextColor(_text_color[i]);
+
+      canvas->setTextSize(1, 2);
+      int x = xs + ((rect.w - (int)_text_width[i]) >> 1);
+      x += canvas->drawString(_text[i], x, y);
+
+      canvas->setTextSize(1, 1);
+      if (_text_upper[i] != nullptr) {
+        canvas->drawString(_text_upper[i], x, y - 4);
+      }
+      if (_text_lower[i] != nullptr) {
+        canvas->drawString(_text_lower[i], x, y + 6);
+      }
+    }
+#if 0
     canvas->setTextDatum(m5gfx::datum_t::middle_center);
     for (int i = 0; i < def::hw::max_main_button; ++i) {
       auto rect = getButtonRect(i, offset_x, offset_y);
@@ -1211,6 +1269,7 @@ struct ui_main_buttons_t : public ui_base_t
       // canvas->drawString(_text[i], xs + 23, ys);
       canvas->drawString(_text[i], xs + 23, y);
     }
+#endif
   }
 
   void draw_button(M5Canvas *canvas, int x, int y, int w, int h, uint32_t color)
