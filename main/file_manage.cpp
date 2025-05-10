@@ -193,6 +193,12 @@ bool storage_sd_t::beginStorage(void)
   if (!_is_begin) {
     system_registry.popup_notify.setPopup(false, def::notify_type_t::NOTIFY_STORAGE_OPEN);
     M5_LOGE("SD card mount failed");
+  } else {
+    for (auto& dm : dir_manage) {
+      if (dm.getStorage() == this) {
+        makeDirectory(dm.makeFullPath("").c_str());
+      }
+    }
   }
 
   return _is_begin;
