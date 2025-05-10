@@ -419,10 +419,6 @@ namespace def::ctrl_assign {
 const char* localize_text_t::get(void) const
 { auto i = (uint8_t)system_registry.user_setting.getLanguage(); return text[i] ? text[i] : text[0]; }
 
-static constexpr const uint8_t key_mapping_index[] = { 
-  4,  5,  9, 10, 12, 13, 14, 15,
-};
-
 //-------------------------------------------------------------------------
 size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
 {
@@ -452,7 +448,7 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
   {
     {
       auto json = json_key_mapping["chord_play"].to<JsonObject>();
-      for (auto btn : key_mapping_index) {
+      for (int btn = 1; btn <= 15; ++btn) {
         auto cmd = command_mapping_custom_main.getCommandParamArray(btn - 1);
         auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::playbutton_table, cmd);
         if (index < 0) continue;
@@ -536,7 +532,7 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
       {
         auto json = json_key_mapping["chord_play"].as<JsonObject>();
         if (!json.isNull()) {
-          for (auto btn : key_mapping_index) {
+          for (int btn = 1; btn <= 15; ++btn) {
             auto name = json[std::to_string(btn)].as<const char*>();
             if (name == nullptr) continue;
             auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::playbutton_table, name);

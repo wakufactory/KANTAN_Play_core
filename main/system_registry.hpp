@@ -160,6 +160,7 @@ protected:
             CHORD_AUTOPLAY_STATE,
             EDIT_VELOCITY,
             BUTTON_MAPPING_SWITCH,
+            DEVELOPER_MODE,
         };
 
         // 音が鳴ったパートへの発光エフェクト設定
@@ -249,6 +250,9 @@ protected:
         uint8_t getButtonMappingSwitch(void) const { return get8(BUTTON_MAPPING_SWITCH); }
         bool getSubButtonSwap(void) const { return 1 == get8(BUTTON_MAPPING_SWITCH); }
 
+        // 開発者モード
+        void setDeveloperMode(bool enabled) { set8(DEVELOPER_MODE, enabled); }
+        bool getDeveloperMode(void) const { return get8(DEVELOPER_MODE); }
     } runtime_info;
 
     struct reg_popup_notify_t : public registry_t {

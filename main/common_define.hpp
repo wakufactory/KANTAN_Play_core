@@ -84,6 +84,7 @@ namespace def {
     NOTIFY_PASTE_PART_SETTING,
     NOTIFY_CLEAR_ALL_NOTES,
     NOTIFY_ALL_RESET,
+    NOTIFY_DEVELOPER_MODE,
   };
   enum qrcode_type_t : uint8_t {
     QRCODE_NONE,
@@ -320,7 +321,7 @@ Button Index mapping
       (const char*[]){ "-", "dim", "m7-5", "sus4", "6", "7", "RESERVED", "add9", "M7", "aug", "7sus4", "dim7", }, // chord_modifier
       (const char*[]){ "-", "〜", },                  // chord_minor_swap
       (const char*[]){ "-", "♭", "♯", },            // chord_semitone
-      (const char*[]){ "-", "I", "II", "III", "IV", "V", "VI", "VII", }, // chord_bass_degree
+      (const char*[]){ "-", "/1", "/2", "/3", "/4", "/5", "/6", "/7", }, // chord_bass_degree
       (const char*[]){ "-", "♭", "♯", },            // chord_bass_semitone
       (const char*[]){ "-", "←", "→", "↓", "↑", "<<", ">>", "Home", "On", "Off", "Mute", "ON/of", "CLEAR", "COPY", "PASTE" },            // edit_function
       (const char*[]){ "-", "×", "SAVE" },            // edit_exit
@@ -361,11 +362,12 @@ Button Index mapping
       wfop_ota_progress,
     };
     enum wifi_ota_state_t : uint8_t {
-      ota_connecting = 102,
-      ota_connection_error = 254,
-      ota_already_up_to_date = 253,
-      ota_update_failed = 252,
       ota_update_done = 101,
+      ota_connecting = 102,
+      ota_update_failed = 251,
+      ota_update_available = 252,
+      ota_already_up_to_date = 253,
+      ota_connection_error = 254,
     };
     enum class wifi_sta_info_t : uint8_t {
       wsi_off = 0,
@@ -648,6 +650,86 @@ Button Index mapping
     static constexpr const command_param_array_t command_mapping_port_b_table[] = {
       { chord_beat, 1}, { chord_beat, 2 },
     };
+
+    struct command_param_array_text_t {
+      const char* text;
+      const char* upper;
+      const char* lower;
+      command_param_array_t command;
+    };
+
+    static constexpr const command_param_array_text_t button_text_table[] = {
+      "1"    , nullptr, nullptr, {                               command::chord_degree   , 1 },
+      "2"    ,  "♭"  , nullptr, { command::chord_semitone, 1 ,  command::chord_degree   , 2 },
+      "2"    , nullptr, nullptr, {                               command::chord_degree   , 2 },
+      "3"    ,  "♭"  , nullptr, { command::chord_semitone, 1 ,  command::chord_degree   , 3 },
+      "3"    , nullptr, nullptr, {                               command::chord_degree   , 3 },
+      "4"    , nullptr, nullptr, {                               command::chord_degree   , 4 },
+      "5"    ,  "♭"  , nullptr, { command::chord_semitone, 1 ,  command::chord_degree   , 5 },
+      "5"    , nullptr, nullptr, {                               command::chord_degree   , 5 },
+      "6"    ,  "♭"  , nullptr, { command::chord_semitone, 1 ,  command::chord_degree   , 6 },
+      "6"    , nullptr, nullptr, {                               command::chord_degree   , 6 },
+      "7"    ,  "♭"  , nullptr, { command::chord_semitone, 1 ,  command::chord_degree   , 7 },
+      "7"    , nullptr, nullptr, {                               command::chord_degree   , 7 },
+      "1"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 1 },
+      "2"    ,  "♭"  , "〜"   , { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 2 },
+      "2"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 2 },
+      "3"    ,  "♭"  , "〜"   , { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 3 },
+      "3"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 3 },
+      "4"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 4 },
+      "5"    ,  "♭"  , "〜"   , { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 5 },
+      "5"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 5 },
+      "6"    ,  "♭"  , "〜"   , { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 6 },
+      "6"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 6 },
+      "7"    ,  "♭"  , "〜"   , { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 7 },
+      "7"    , nullptr, "〜"   , {                               command::chord_minor_swap, 1, command::chord_degree, 7 },
+      "1"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 1 },
+      "1"    , nullptr, "M7"   , { command::chord_modifier, KANTANMusic_Modifier_M7   ,                               command::chord_degree, 1 },
+      "2"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 2 },
+      "3"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 3 },
+      "3"    , "〜"   , "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    , command::chord_minor_swap, 1, command::chord_degree, 3 },
+      "4"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 4 },
+      "4"    , nullptr, "M7"   , { command::chord_modifier, KANTANMusic_Modifier_M7   ,                               command::chord_degree, 4 },
+      "5"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 5 },
+      "6"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 6 },
+      "7"    , nullptr, "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 7 },
+      "7"    , "〜"   , "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    , command::chord_minor_swap, 1, command::chord_degree, 7 },
+      "7"    , nullptr, "m7-5" , { command::chord_modifier, KANTANMusic_Modifier_m7_5 ,                               command::chord_degree, 7 },
+      "7"    , nullptr, "dim"  , { command::chord_modifier, KANTANMusic_Modifier_dim  ,                               command::chord_degree, 7 },
+      "dim"  , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_dim  },
+      "m7-5" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_m7_5 },
+      "sus4" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_sus4 },
+      "6"    , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_6    },
+      "7"    , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_7    },
+      "Add9" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_Add9 },
+      "M7"   , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_M7   },
+      "aug"  , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_aug  },
+      "7sus4", nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_7sus4},
+      "dim7" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_dim7 },
+      "〜"   , nullptr,nullptr, { command::chord_minor_swap, 1 },
+      "♭"   , nullptr,nullptr, { command::chord_semitone  , 1 },
+      "♯"    , nullptr,nullptr, { command::chord_semitone  , 2 },
+      "/1"   , nullptr, nullptr, {                                  command::chord_bass_degree, 1 },
+      "/2"   ,  "♭"  , nullptr, { command::chord_bass_semitone, 1, command::chord_bass_degree, 2 },
+      "/2"   , nullptr, nullptr, {                                  command::chord_bass_degree, 2 },
+      "/3"   ,  "♭"  , nullptr, { command::chord_bass_semitone, 1, command::chord_bass_degree, 3 },
+      "/3"   , nullptr, nullptr, {                                  command::chord_bass_degree, 3 },
+      "/4"   , nullptr, nullptr, {                                  command::chord_bass_degree, 4 },
+      "/5"   ,  "♭"  , nullptr, { command::chord_bass_semitone, 1, command::chord_bass_degree, 5 },
+      "/5"   , nullptr, nullptr, {                                  command::chord_bass_degree, 5 },
+      "/6"   ,  "♭"  , nullptr, { command::chord_bass_semitone, 1, command::chord_bass_degree, 6 },
+      "/6"   , nullptr, nullptr, {                                  command::chord_bass_degree, 6 },
+      "/7"   ,  "♭"  , nullptr, { command::chord_bass_semitone, 1, command::chord_bass_degree, 7 },
+      "/7"   , nullptr, nullptr, {                                  command::chord_bass_degree, 7 },
+      "〜"   , nullptr, "7"    , {                                  command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    },
+      "♭〜" , nullptr, nullptr, { command::chord_semitone, 1, command::chord_minor_swap, 1,                                                     },
+      "♭〜" , nullptr, "7"    , { command::chord_semitone, 1, command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    },
+      "♭"   , nullptr, "dim"  , { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_dim  },
+      "♯"    , nullptr, "dim"  , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_dim  },
+      "♭"   , nullptr, "m7-5" , { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
+      "♯"    , nullptr, "m7-5" , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
+      nullptr,nullptr,nullptr, {},
+    };
   };
 
   namespace play {
@@ -778,7 +860,8 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 2;
-    static constexpr const uint32_t app_version_patch = 4;
+    static constexpr const uint32_t app_version_patch = 5;
+    static constexpr const char app_version_string[] = "025";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
@@ -871,19 +954,75 @@ Button Index mapping
     int get_index_from_jsonname(const control_assignment_t* data, const char* name);
 
     static constexpr const control_assignment_t playbutton_table[] = {
-      { "[dim]"   , { "dim",   nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_dim }   },
-      { "[m7_5]"  , { "m7_5",  nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_m7_5 }  },
-      { "[sus4]"  , { "sus4",  nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_sus4 }  },
-      { "[6]"     , { "6",     nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_6 }     },
-      { "[7]"     , { "7",     nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_7 }     },
-      { "[Add9]"  , { "Add9",  nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_Add9 }  },
-      { "[M7]"    , { "M7",    nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_M7 }    },
-      { "[aug]"   , { "aug",   nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_aug }   },
-      { "[7sus4]" , { "7sus4", nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_7sus4 } },
-      { "[dim7]"  , { "dim7",  nullptr }, { command::chord_modifier   , KANTANMusic_Modifier_dim7 }  },
-      { "swap"    , { "〜",    nullptr }, { command::chord_minor_swap , 1 }                          },
-      { "flat"    , { "♭",    nullptr }, { command::chord_semitone   , 1 }                          },
-      { "sharp"   , { "♯",    nullptr }, { command::chord_semitone   , 2 }                          },
+      { "1"            , { "1"             , nullptr               }, {                               command::chord_degree   , 1 } },
+      { "2 flat"       , { "2♭"           , nullptr               }, { command::chord_semitone, 1 ,  command::chord_degree   , 2 } },
+      { "2"            , { "2"             , nullptr               }, {                               command::chord_degree   , 2 } },
+      { "3 flat"       , { "3♭"           , nullptr               }, { command::chord_semitone, 1 ,  command::chord_degree   , 3 } },
+      { "3"            , { "3"             , nullptr               }, {                               command::chord_degree   , 3 } },
+      { "4"            , { "4"             , nullptr               }, {                               command::chord_degree   , 4 } },
+      { "5 flat"       , { "5♭"           , nullptr               }, { command::chord_semitone, 1 ,  command::chord_degree   , 5 } },
+      { "5"            , { "5"             , nullptr               }, {                               command::chord_degree   , 5 } },
+      { "6 flat"       , { "6♭"           , nullptr               }, { command::chord_semitone, 1 ,  command::chord_degree   , 6 } },
+      { "6"            , { "6"             , nullptr               }, {                               command::chord_degree   , 6 } },
+      { "7 flat"       , { "7♭"           , nullptr               }, { command::chord_semitone, 1 ,  command::chord_degree   , 7 } },
+      { "7"            , { "7"             , nullptr               }, {                               command::chord_degree   , 7 } },
+      { "1 swap"       , { "1〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 1 } },
+      { "2 flat swap"  , { "2♭〜"         , nullptr               }, { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 2 } },
+      { "2 swap"       , { "2〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 2 } },
+      { "3 flat swap"  , { "3♭〜"         , nullptr               }, { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 3 } },
+      { "3 swap"       , { "3〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 3 } },
+      { "4 swap"       , { "4〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 4 } },
+      { "5 flat swap"  , { "5♭〜"         , nullptr               }, { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 5 } },
+      { "5 swap"       , { "5〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 5 } },
+      { "6 flat swap"  , { "6♭〜"         , nullptr               }, { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 6 } },
+      { "6 swap"       , { "6〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 6 } },
+      { "7 flat swap"  , { "7♭〜"         , nullptr               }, { command::chord_semitone, 1 ,  command::chord_minor_swap, 1, command::chord_degree, 7 } },
+      { "7 swap"       , { "7〜"           , nullptr               }, {                               command::chord_minor_swap, 1, command::chord_degree, 7 } },
+      { "1[7]"         , { "1 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 1 } },
+      { "1[M7]"        , { "1 [ M7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_M7   ,                               command::chord_degree, 1 } },
+      { "2[7]"         , { "2 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 2 } },
+      { "3[7]"         , { "3 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 3 } },
+      { "3 swap[7]"    , { "3〜[ 7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    , command::chord_minor_swap, 1, command::chord_degree, 3 } },
+      { "4[7]"         , { "4 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 4 } },
+      { "4[M7]"        , { "4 [ M7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_M7   ,                               command::chord_degree, 4 } },
+      { "5[7]"         , { "5 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 5 } },
+      { "6[7]"         , { "6 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 6 } },
+      { "7[7]"         , { "7 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 7 } },
+      { "7 swap[7]"    , { "7〜[ 7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    , command::chord_minor_swap, 1, command::chord_degree, 7 } },
+      { "7[m7_5]"      , { "7 [ m7-5 ]"    , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_m7_5 ,                               command::chord_degree, 7 } },
+      { "7[dim]"       , { "7 [ dim ]"     , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_dim  ,                               command::chord_degree, 7 } },
+      { "[dim]"        , { "[ dim ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_dim  } },
+      { "[m7_5]"       , { "[ m7-5 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_m7_5 } },
+      { "[sus4]"       , { "[ sus4 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_sus4 } },
+      { "[6]"          , { "[ 6 ]"         , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_6    } },
+      { "[7]"          , { "[ 7 ]"         , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    } },
+      { "[Add9]"       , { "[ Add9 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_Add9 } },
+      { "[M7]"         , { "[ M7 ]"        , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_M7   } },
+      { "[aug]"        , { "[ aug ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_aug  } },
+      { "[7sus4]"      , { "[ 7sus4 ]"     , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7sus4} },
+      { "[dim7]"       , { "[ dim7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_dim7 } },
+      { "swap"         , { "〜"            , nullptr               }, { command::chord_minor_swap, 1 } },
+      { "flat"         , { "♭"            , nullptr               }, { command::chord_semitone  , 1 } },
+      { "sharp"        , { "♯"             , nullptr               }, { command::chord_semitone  , 2 } },
+      { "slash 1"      , { "/1"            , nullptr               }, {                                  command::chord_bass_degree, 1 } },
+      { "slash 2 flat" , { "/2♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 2 } },
+      { "slash 2"      , { "/2"            , nullptr               }, {                                  command::chord_bass_degree, 2 } },
+      { "slash 3 flat" , { "/3♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 3 } },
+      { "slash 3"      , { "/3"            , nullptr               }, {                                  command::chord_bass_degree, 3 } },
+      { "slash 4"      , { "/4"            , nullptr               }, {                                  command::chord_bass_degree, 4 } },
+      { "slash 5 flat" , { "/5♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 5 } },
+      { "slash 5"      , { "/5"            , nullptr               }, {                                  command::chord_bass_degree, 5 } },
+      { "slash 6 flat" , { "/6♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 6 } },
+      { "slash 7"      , { "/6"            , nullptr               }, {                                  command::chord_bass_degree, 6 } },
+      { "slash 7 flat" , { "/7♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 7 } },
+      { "slash 7"      , { "/7"            , nullptr               }, {                                  command::chord_bass_degree, 7 } },
+      { "swap[7]"      , { "〜[ 7 ]"        , nullptr              }, {                                  command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    } },
+      { "flat swap"    , { "♭〜"           , nullptr              }, { command::chord_semitone, 1, command::chord_minor_swap, 1,                                                     } },
+      { "flat swap[7]" , { "♭〜[ 7 ]"      , nullptr              }, { command::chord_semitone, 1, command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    } },
+      { "flat[dim]"    , { "♭ [ dim ]"     , nullptr              }, { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_dim  } },
+      { "sharp[dim]"   , { "♯ [ dim ]"      , nullptr              }, { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_dim  } },
+      { "flat[m7_5]"   , { "♭ [ m7-5 ]"    , nullptr              }, { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 } },
+      { "sharp[m7_5]"  , { "♯ [ m7-5 ]"     , nullptr              }, { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 } },
       { nullptr        , nullptr                                   , {} },
     };
     static constexpr const control_assignment_t external_table[] = {

@@ -141,7 +141,7 @@ static esp_err_t exec_http_ota(const char* binary_url)
   return esp_https_ota(&ota_config);
 }
 
-static void exec_get_binary_url(const char* json_url, char* data, const size_t length)
+static def::command::wifi_ota_state_t exec_get_binary_url(const char* json_url, char* data, const size_t length)
 {
   _http_dst = data;
   _http_dst_remain = length;
@@ -155,6 +155,11 @@ static void exec_get_binary_url(const char* json_url, char* data, const size_t l
       auto array_size = firmware_array.size();
       M5_LOGV("firmware count:%d", array_size);
       if (array_size != 0) {
+        const char* target_type = "release";
+        if (system_registry.runtime_info.getDeveloperMode()) {
+          target_type = "develop";
+        }
+
 #if defined ( CONFIG_IDF_TARGET_ESP32S3 )
         const char* board_name = "cores3";
 #else
@@ -162,18 +167,32 @@ static void exec_get_binary_url(const char* json_url, char* data, const size_t l
 #endif
         for (int i = 0; i < array_size; ++i) {
           auto type = firmware_array[i]["type"].as<const char*>();
+          auto ver = firmware_array[i]["ver"].as<const char*>();
           auto url_list = firmware_array[i]["url"].as<JsonObject>();
+
           M5_LOGD("type: %s", type);
-          auto url = url_list[board_name].as<const char*>();
-          M5_LOGD("url: %s", url);
-          if (url != nullptr) {
-            strncpy(data, url, length);
-            break;
+          M5_LOGD("ver: %s", type);
+
+          // ターゲットタイプが同じか確認
+          bool target_check = (0 == strcmp(target_type, type));
+          if (target_check) {
+            auto url = url_list[board_name].as<const char*>();
+            M5_LOGD("url: %s", url);
+            if (url != nullptr) {
+              strncpy(data, url, length);
+              // バージョンが今と一致しているか確認
+              bool version_check = (0 == strcmp(def::app::app_version_string, ver));
+              if (version_check) {
+                return def::command::wifi_ota_state_t::ota_already_up_to_date;
+              }
+              return def::command::wifi_ota_state_t::ota_update_available;
+            }
           }
         }
       }
     }
   }
+  return def::command::wifi_ota_state_t::ota_connection_error;
 }
 
 static void exec_ota_inner(const char* json_url)
@@ -181,9 +200,10 @@ static void exec_ota_inner(const char* json_url)
   static constexpr const size_t MAX_HTTP_OUTPUT_BUFFER = 512;
   char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER + 1] = { 0 };
 
-  exec_get_binary_url(json_url, local_response_buffer, MAX_HTTP_OUTPUT_BUFFER);
-  if (local_response_buffer[0] == 0) {
-    system_registry.runtime_info.setWiFiOtaProgress(def::command::wifi_ota_state_t::ota_connection_error);
+  auto state = exec_get_binary_url(json_url, local_response_buffer, MAX_HTTP_OUTPUT_BUFFER);
+  system_registry.runtime_info.setWiFiOtaProgress(state);
+
+  if (state != def::command::wifi_ota_state_t::ota_update_available) {
     return;
   }
   auto ret = exec_http_ota(local_response_buffer);
