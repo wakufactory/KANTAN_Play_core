@@ -696,19 +696,19 @@ Button Index mapping
       "7"    , "〜"   , "7"    , { command::chord_modifier, KANTANMusic_Modifier_7    , command::chord_minor_swap, 1, command::chord_degree, 7 },
       "7"    , nullptr, "m7-5" , { command::chord_modifier, KANTANMusic_Modifier_m7_5 ,                               command::chord_degree, 7 },
       "7"    , nullptr, "dim"  , { command::chord_modifier, KANTANMusic_Modifier_dim  ,                               command::chord_degree, 7 },
-      "dim"  , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_dim  },
-      "m7-5" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_m7_5 },
-      "sus4" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_sus4 },
-      "6"    , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_6    },
-      "7"    , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_7    },
-      "Add9" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_Add9 },
-      "M7"   , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_M7   },
-      "aug"  , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_aug  },
-      "7sus4", nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_7sus4},
-      "dim7" , nullptr,nullptr, { command::chord_modifier, KANTANMusic_Modifier_dim7 },
-      "〜"   , nullptr,nullptr, { command::chord_minor_swap, 1 },
-      "♭"   , nullptr,nullptr, { command::chord_semitone  , 1 },
-      "♯"    , nullptr,nullptr, { command::chord_semitone  , 2 },
+      "dim"  , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_dim  },
+      "m7-5" , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_m7_5 },
+      "sus4" , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_sus4 },
+      "6"    , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_6    },
+      "7"    , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_7    },
+      "Add9" , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_Add9 },
+      "M7"   , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_M7   },
+      "aug"  , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_aug  },
+      "7sus4", nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_7sus4},
+      "dim7" , nullptr, nullptr, { command::chord_modifier, KANTANMusic_Modifier_dim7 },
+      "〜"   , nullptr, nullptr, { command::chord_minor_swap, 1 },
+      "♭"   , nullptr, nullptr, { command::chord_semitone  , 1 },
+      "♯"   , nullptr, nullptr, { command::chord_semitone  , 2 },
       "/1"   , nullptr, nullptr, {                                  command::chord_bass_degree, 1 },
       "/2"   ,  "♭"  , nullptr, { command::chord_bass_semitone, 1, command::chord_bass_degree, 2 },
       "/2"   , nullptr, nullptr, {                                  command::chord_bass_degree, 2 },
@@ -725,9 +725,9 @@ Button Index mapping
       "♭〜" , nullptr, nullptr, { command::chord_semitone, 1, command::chord_minor_swap, 1,                                                     },
       "♭〜" , nullptr, "7"    , { command::chord_semitone, 1, command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    },
       "♭"   , nullptr, "dim"  , { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_dim  },
-      "♯"    , nullptr, "dim"  , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_dim  },
+      "♯"   , nullptr, "dim"  , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_dim  },
       "♭"   , nullptr, "m7-5" , { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
-      "♯"    , nullptr, "m7-5" , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
+      "♯"   , nullptr, "m7-5" , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
       nullptr,nullptr,nullptr, {},
     };
   };
@@ -830,7 +830,7 @@ Button Index mapping
     static constexpr const uint8_t max_chord_part = 6;          // コード演奏のパート数
     static constexpr const uint8_t max_pitch_without_drum = 6;  // ピッチの数 (ドラム以外のパート)
     static constexpr const uint8_t max_pitch_with_drum = 7;     // ピッチの数 (ドラムパートを含む)
-    static constexpr const uint8_t max_arpeggio_step = 32; // コード演奏時のアルペジオパターンの最大ステップ数
+    static constexpr const uint8_t max_arpeggio_step = 64;      // コード演奏時のアルペジオパターンの最大ステップ数
     static constexpr const uint8_t max_play_key = 12;
     static constexpr const uint8_t max_program_number = 129;  // プログラムチェンジの最大値(MIDIの規格128＋ドラム用の1)
     static constexpr const uint8_t max_cursor_x = max_arpeggio_step;    // 編集時の横方向カーソル移動範囲
@@ -860,8 +860,8 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 2;
-    static constexpr const uint32_t app_version_patch = 5;
-    static constexpr const char app_version_string[] = "025";
+    static constexpr const uint32_t app_version_patch = 7;
+    static constexpr const char app_version_string[] = "027";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";

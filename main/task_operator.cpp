@@ -150,12 +150,15 @@ void task_operator_t::task_func(task_operator_t* me)
       { // メインボタンの色設定
         for (int i = 0; i < def::hw::max_main_button; ++i) {
           auto pair = system_registry.command_mapping_current.getCommandParamArray(i);
-          auto command_param = pair.array[0];
+          uint32_t color = 0;
+          bool hit = true;
+          for (int j = 0; pair.array[j].command != def::command::none; ++j) {
+            auto command_param = pair.array[j];
+            color = getColorByCommand(command_param);
+            hit &= system_registry.working_command.check(command_param);
+          }
 
-          auto color = getColorByCommand(command_param);
-
-          uint8_t value = system_registry.working_command.check(command_param);
-          if (value == 0) {
+          if (!hit) {
             int r = (color >> 16) & 0xFF;
             int g = (color >> 8) & 0xFF;
             int b = color & 0xFF;
@@ -409,25 +412,6 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
     }
     break;
 
-/* // ファイル操作はメニューから行うようになるため、ここでの暫定対応は終了
-  case def::command::file_index_ud:
-    if (is_pressed) {
-      // ファイルインデックス上下動作
-      int32_t tmp = system_registry.file_command.getFileIndex();
-      tmp += param;
-      tmp = file_manage.adjustFileIndex(tmp);
-      system_registry.operator_command.addQueue( { def::command::file_index_set, tmp } );
-    }
-    break;
-
-  case def::command::file_index_set:
-    if (is_pressed) {
-      system_registry.file_command.setFileIndex(param);
-      M5_LOGV("file index %d", param);
-    }
-    break;
-*/
-
   case def::command::load_from_memory:
     if (is_pressed) {
 
@@ -445,7 +429,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
   uint32_t msec = M5.millis();
             bool result = system_registry.unchanged_song_data.loadSongJSON(mem->data, mem->size);
   msec = M5.millis() - msec;
-  M5_LOGE("load time %d", msec);
+  M5_LOGD("load time %d", msec);
             if (!result) {
               result = system_registry.unchanged_song_data.loadText(mem->data, mem->size);
             }
@@ -1034,6 +1018,7 @@ void task_operator_t::changeCommandMapping(void)
         def::command::command_mapping_edit_alt_table,
       };
       main_map = tbl[map_index];
+      custom_map = (map_index != 0);
     }
     sub_map = def::command::command_mapping_sub_button_edit_table;
     break;
@@ -1053,7 +1038,10 @@ void task_operator_t::changeCommandMapping(void)
     }
   }
   if (custom_map) {
-    system_registry.command_mapping_current.assign(system_registry.command_mapping_custom_main);
+    for (int i = 0; i < def::hw::max_main_button; ++i) {
+      auto pair = system_registry.command_mapping_custom_main.getCommandParamArray(i);
+      system_registry.command_mapping_current.setCommandParamArray(i, pair);
+    }
   }
 
  // サブボタンのコマンドマッピングを変更する

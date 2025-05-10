@@ -1052,14 +1052,17 @@ struct ui_main_buttons_t : public ui_base_t
 
         auto cp_pair = system_registry.command_mapping_current.getCommandParamArray(i);
         def::command::command_param_t command_param;
-        int pindex = 3;
-        do {
-          command_param = cp_pair.array[pindex];
-        } while ((command_param.command == 0) && pindex --);
+        int pindex = 0;
+        bool hit = true;
+        for (int j = 0; cp_pair.array[j].command != def::command::none; ++j) {
+          pindex = j;
+          command_param = cp_pair.array[j];
+          hit &= system_registry.working_command.check(command_param);
+        }
         auto command = command_param.command;
         uint32_t text_color = system_registry.color_setting.getButtonPressedTextColor();
         if ((_btn_bitmask & (1 << i)) == 0) {
-          if (system_registry.working_command.check(command_param)) {
+          if (hit) {
             text_color = system_registry.color_setting.getButtonWorkingTextColor();
           } else {
             text_color = system_registry.color_setting.getButtonDefaultTextColor();
