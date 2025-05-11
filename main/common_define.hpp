@@ -4,6 +4,7 @@
 #include "kantan-music/include/KANTANMusic.h"
 
 #include <stdint.h>
+#include <stddef.h>
 
 #if __has_include (<sdkconfig.h>)
  #include <sdkconfig.h>
@@ -757,18 +758,7 @@ Button Index mapping
       arpeggio_style_max
     };
 
-    static const char* GetVoicingName(KANTANMusic_Voicing voicing) {
-      switch (voicing) {
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Close:                  return "Close";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Guitar:                 return "Guitar";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Static:                 return "Static";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Ukulele:                return "Ukulele";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_Major:           return "M-Major";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_MajorPentatonic: return "M-Penta";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_Chromatic:       return "M-Chroma";
-        default: return "----";
-      }
-    }
+    const char* GetVoicingName(KANTANMusic_Voicing voicing);
 
     namespace note {
       static constexpr const size_t max_note_scale = 5;
