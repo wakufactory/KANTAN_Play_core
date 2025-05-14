@@ -16,6 +16,7 @@ static bool writeRegister8(uint8_t reg, uint8_t data)
   return M5.In_I2C.writeRegister8(i2c_addr, reg, data, i2c_freq);
 }
 
+/*
 static bool writeRegister(uint8_t reg, const uint8_t* data, size_t length)
 {
   return M5.In_I2C.writeRegister(i2c_addr, reg, data, length, i2c_freq);
@@ -25,6 +26,7 @@ static bool readRegister(uint8_t reg, uint8_t* result, size_t length)
 {
   return M5.In_I2C.readRegister(i2c_addr, reg, result, length, i2c_freq);
 }
+//*/
 
 static void bulk_write(const uint8_t* reg_data, size_t size) {
   for (int i = 0; i < size; i += 2) {

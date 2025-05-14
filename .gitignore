@@ -6,3 +6,4 @@
 /main/kantan-music/src
 .DS_Store
 .vscode/extensions.json
+/build

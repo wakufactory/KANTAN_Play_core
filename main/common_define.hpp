@@ -4,6 +4,7 @@
 #include "kantan-music/include/KANTANMusic.h"
 
 #include <stdint.h>
+#include <stddef.h>
 
 #if __has_include (<sdkconfig.h>)
  #include <sdkconfig.h>
@@ -757,18 +758,7 @@ Button Index mapping
       arpeggio_style_max
     };
 
-    static const char* GetVoicingName(KANTANMusic_Voicing voicing) {
-      switch (voicing) {
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Close:                  return "Close";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Guitar:                 return "Guitar";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Static:                 return "Static";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Ukulele:                return "Ukulele";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_Major:           return "M-Major";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_MajorPentatonic: return "M-Penta";
-        case KANTANMusic_Voicing::KANTANMusic_Voicing_Melody_Chromatic:       return "M-Chroma";
-        default: return "----";
-      }
-    }
+    const char* GetVoicingName(KANTANMusic_Voicing voicing);
 
     namespace note {
       static constexpr const size_t max_note_scale = 5;
@@ -859,9 +849,9 @@ Button Index mapping
     static constexpr const char* wifi_mdns = "kanplay";        // WiFi接続時のmDNS名 kanplay.local
 
     static constexpr const uint32_t app_version_major = 0;
-    static constexpr const uint32_t app_version_minor = 2;
-    static constexpr const uint32_t app_version_patch = 8;
-    static constexpr const char app_version_string[] = "028";
+    static constexpr const uint32_t app_version_minor = 3;
+    static constexpr const uint32_t app_version_patch = 0;
+    static constexpr const char app_version_string[] = "030";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
@@ -1170,6 +1160,7 @@ Button Index mapping
 
     namespace pin {
 #if defined (CONFIG_IDF_TARGET_ESP32S3)
+// for CoreS3
     static constexpr const gpio_num_t stm_int = GPIO_NUM_10;
     static constexpr const gpio_num_t midi_tx = GPIO_NUM_0;
     static constexpr const gpio_num_t i2s_ws = GPIO_NUM_6;
@@ -1178,6 +1169,7 @@ Button Index mapping
     static constexpr const gpio_num_t i2s_out = GPIO_NUM_13;
     static constexpr const gpio_num_t i2s_in = GPIO_NUM_14;
 #elif defined (CONFIG_IDF_TARGET_ESP32)
+// for Core2
     static constexpr const gpio_num_t stm_int = GPIO_NUM_35;
     static constexpr const gpio_num_t midi_tx = GPIO_NUM_0;
     static constexpr const gpio_num_t i2s_ws = GPIO_NUM_27;
@@ -1185,6 +1177,16 @@ Button Index mapping
     static constexpr const gpio_num_t i2s_mclk = GPIO_NUM_NC;
     static constexpr const gpio_num_t i2s_out = GPIO_NUM_2;
     static constexpr const gpio_num_t i2s_in = GPIO_NUM_34;
+/*
+// for CoreFIRE
+    static constexpr const gpio_num_t stm_int = GPIO_NUM_35;
+    static constexpr const gpio_num_t midi_tx = GPIO_NUM_0;
+    static constexpr const gpio_num_t i2s_ws = GPIO_NUM_12;
+    static constexpr const gpio_num_t i2s_bck = GPIO_NUM_25;
+    static constexpr const gpio_num_t i2s_mclk = GPIO_NUM_NC;
+    static constexpr const gpio_num_t i2s_out = GPIO_NUM_15;
+    static constexpr const gpio_num_t i2s_in = GPIO_NUM_34;
+//*/
 #else
     static constexpr const uint8_t stm_int = UINT8_MAX;
     static constexpr const uint8_t midi_tx = UINT8_MAX;

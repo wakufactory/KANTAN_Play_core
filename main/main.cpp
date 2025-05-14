@@ -48,7 +48,7 @@ void setup() {
 
   M5.Display.setRotation(0);
   M5.Display.setTextSize(2);
-  M5.Display.printf("KANTAN Play\nver%ld.%ld.%ld\n\nboot"
+  M5.Display.printf("KANTAN Play\nver%lu.%lu.%lu\n\nboot"
     , kanplay_ns::def::app::app_version_major, kanplay_ns::def::app::app_version_minor, kanplay_ns::def::app::app_version_patch);
 
   M5.Power.setExtOutput(true);

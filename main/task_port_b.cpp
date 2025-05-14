@@ -35,7 +35,6 @@ void task_port_b_t::task_func(task_port_b_t* me)
   }
 
   for (;;) {
-    uint32_t button_state = 0;
     M5.delay(1);
 
     for (int i = 0; i < def::hw::max_port_b_pins; ++i) {
