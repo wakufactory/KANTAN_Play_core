@@ -426,7 +426,7 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
 
   json_root["format"] = "KANTANPlayCore";
   json_root["type"] = "Config";
-  json_root["version"] = 1;
+  json_root["version"] = 2;
 
   {
     auto json = json_root["user_setting"].to<JsonObject>();
@@ -504,7 +504,9 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
     return false;
   }
 
-  if (json_root["version"] > 1)
+  auto data_version = json_root["version"].as<int>();
+
+  if (json_root["version"] > 2)
   {
     M5_LOGV("version mismatch: %d", json_root["version"].as<int>());
   }
@@ -532,12 +534,16 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
       {
         auto json = json_key_mapping["chord_play"].as<JsonObject>();
         if (!json.isNull()) {
-          for (int btn = 1; btn <= 15; ++btn) {
-            auto name = json[std::to_string(btn)].as<const char*>();
-            if (name == nullptr) continue;
-            auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::playbutton_table, name);
-            if (index < 0) continue;
-            command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::playbutton_table[index].command);
+          if (data_version == 1 && json["9"] == "7") {
+            // 旧仕様のキーアサイン設定で Degree 7 と 7th を混同するケースがあったので、ここで古いデータを無視する
+          } else {
+            for (int btn = 1; btn <= 15; ++btn) {
+              auto name = json[std::to_string(btn)].as<const char*>();
+              if (name == nullptr) continue;
+              auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::playbutton_table, name);
+              if (index < 0) continue;
+              command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::playbutton_table[index].command);
+            }
           }
         }
       }
