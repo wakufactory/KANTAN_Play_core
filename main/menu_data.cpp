@@ -751,11 +751,11 @@ protected:
 };
 
 struct mi_arpeggio_step_t : public mi_selector_t {
-  static constexpr const simple_text_array_t name_array = { 16, (const simple_text_t[]){
-    "1",  "2",  "3",  "4",
-    "5",  "6",  "7",  "8",
-    "9", "10", "11", "12",
-   "13", "14", "15", "16",
+  static constexpr const simple_text_array_t name_array = { 32, (const simple_text_t[]){
+    "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",
+    "9",  "10", "11", "12", "13", "14", "15", "16",
+    "17", "18", "19", "20", "21", "22", "23", "24",
+    "25", "26", "27", "28", "29", "30", "31", "32",
   }};
 
   constexpr mi_arpeggio_step_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title )

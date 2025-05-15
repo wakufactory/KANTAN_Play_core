@@ -1892,8 +1892,6 @@ public:
         _is_enabled = true;
         setClientRect(ui_partinfo_list[target_index].getClientRect());
         setTargetRect({0, 0, main_area_width, main_area_height});
-        // system_registry.chord_play.setCursorX(0);
-        system_registry.chord_play.setCursorY(0);
         _cursor_x = 0x80;
         _cursor_y = 0x80;
       } else
