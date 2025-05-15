@@ -468,6 +468,9 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
 
         // 編集に入る際にオートプレイは無効にする
         system_registry.runtime_info.setChordAutoplayState(def::play::auto_play_mode_t::auto_play_none);
+
+        // 編集に入る際に、カーソル位置を左下原点に移動させる
+        system_registry.operator_command.addQueue( { def::command::edit_function, def::command::edit_function_t::backhome } );
       }
     }
     break;
@@ -714,7 +717,7 @@ void task_operator_t::procEditFunction(const def::command::command_param_t& comm
   case def::command::edit_function_t::page_right: new_x += 8; break;
   case def::command::edit_function_t::backhome:
     new_x = 0;
-    new_y = 0;
+    new_y = 6;
     break;
 
   case def::command::edit_function_t::ef_on:   // ピッチのベロシティプロット ON
