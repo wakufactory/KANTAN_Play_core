@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: LicenseRef-KANTAN-Music
+// This file is licensed under the KANTAN Music API License.
+// See main/kantan-music/LICENSE_KANTAN_MUSIC.md for details.
+
 #ifndef KANTAN_MUSIC_H
 #define KANTAN_MUSIC_H
 
