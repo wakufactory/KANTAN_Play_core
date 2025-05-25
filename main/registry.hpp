@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #ifndef KANPLAY_REGISTRY_HPP
 #define KANPLAY_REGISTRY_HPP
 

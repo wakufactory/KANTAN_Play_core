@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include <M5Unified.h>
 
 #include "menu_data.hpp"
