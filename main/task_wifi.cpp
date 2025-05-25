@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include <M5Unified.h>
 
 #include <string.h>
@@ -544,42 +547,29 @@ static esp_err_t response_ssid_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
-static std::map<std::string, std::string> parse_post_data(httpd_req_t *req)
-{
-  std::map<std::string, std::string> res;
+static esp_err_t response_post_wifi_handler(httpd_req_t *req) {
   char buf[256];
   int ret, len = req->content_len;
   if (len > sizeof(buf)) len = sizeof(buf);
   if ((ret = httpd_req_recv(req, buf, len)) <= 0) {
-    return res;
+    return ESP_FAIL;
   }
-  buf[ret] = 0;
-  char *p = buf;
-  while (p) {
-    char *q = strchr(p, '&');
-    if (q) {
-      *q = 0;
-    }
-    char *r = strchr(p, '=');
-    if (r) {
-      *r = 0;
-      res[p] = r + 1;
-    }
-    if (q) {
-      p = q + 1;
-    } else {
-      p = nullptr;
-    }
-  }
-  return res;
-}
 
-static esp_err_t response_post_wifi_handler(httpd_req_t *req) {
-  auto data = parse_post_data(req);
-  auto ssid = data["s"];
-  auto password = data["p"];
-  if (ssid.length()) {
-    WiFi.begin(ssid.c_str(), password.c_str());
+  char ssid[128] = { 0 };
+  char password[128] = { 0 };
+  auto res_s = httpd_query_key_value(buf, "s", ssid, sizeof(ssid));
+  auto res_p = httpd_query_key_value(buf, "p", password, sizeof(password));
+
+  // SSID文字列の "+" を " " に置換
+  for (int i = 0; ssid[i]; ++i) {
+    if (ssid[i] == '+') {
+      ssid[i] = ' ';
+    }
+  }
+  // M5_LOGD("ssid : %s  password : %s", ssid, password);
+
+  if (res_s == ESP_OK) {
+    WiFi.begin(ssid, password);
     system_registry.wifi_control.setMode(def::command::wifi_mode_t::wifi_enable_sta);
     system_registry.wifi_control.setOperation(def::command::wifi_operation_t::wfop_disable);
     return response_redirect(req, "/");
