@@ -267,6 +267,7 @@ void system_registry_t::reset(void)
   color_setting.setButtonCursorColor(    0x669966); // カーソルボタンの色
   color_setting.setButtonDefaultColor(   0x333333); // その他のボタンの色
   color_setting.setButtonMenuNumberColor(0x666699); // メニュー表示時の番号ボタンの色
+  color_setting.setButtonPartColor(      0x2781FF); // パート選択ボタンの色
 
   color_setting.setButtonPressedTextColor(0xFFFFDD); // ボタンが押された時のテキスト色
   color_setting.setButtonWorkingTextColor(0xFFFFFF); // ボタンが動作中の時のテキスト色

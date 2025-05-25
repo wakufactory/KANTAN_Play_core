@@ -120,12 +120,12 @@ struct mi_tree_t : public menu_item_t {
 
     int tmp = (_input_number_result * 10) + number;
 
-    if (tmp > max_value)
+    while (tmp > max_value && tmp >= 10)
     {
       auto div = 10000;
-      if      (max_value < 10) { div = 10;}
-      else if (max_value < 100) { div = 100; }
-      else if (max_value < 1000) { div = 1000; }
+      if      (tmp >= 1000) { div = 1000; }
+      else if (tmp >= 100) { div = 100; }
+      else if (tmp >= 10) { div = 10;}
       tmp %= div;
     }
 
@@ -232,12 +232,12 @@ struct mi_normal_t : public menu_item_t {
     int tmp = (_input_number_result * 10) + number;
     int max_value = getMaxValue();
 
-    if (tmp > max_value)
+    while (tmp > max_value && tmp >= 10)
     {
       auto div = 10000;
-      if      (max_value < 10) { div = 10;}
-      else if (max_value < 100) { div = 100; }
-      else if (max_value < 1000) { div = 1000; }
+      if      (tmp >= 1000) { div = 1000; }
+      else if (tmp >= 100) { div = 100; }
+      else if (tmp >= 10) { div = 10;}
       tmp %= div;
     }
 
@@ -1303,6 +1303,7 @@ struct mi_otaupdate_t : public mi_normal_t {
       return true;
     }
     system_registry.wifi_control.setOperation(def::command::wifi_operation_t::wfop_disable);
+    system_registry.runtime_info.setWiFiOtaProgress(0);
     return mi_normal_t::exit();
   }
 
@@ -1738,6 +1739,25 @@ static constexpr menu_item_ptr menu_system[] = {
   (const mi_tree_t          []){{ def::menu_category_t::menu_system,199,  2   , { "External Device", "外部デバイス" }}},
   (const mi_portc_midi_t    []){{ def::menu_category_t::menu_system,200,   3  , { "PortC MIDI"     , "ポートC MIDI" }}},
   (const mi_ble_midi_t      []){{ def::menu_category_t::menu_system,201,   3  , { "BLE MIDI"       , "BLE MIDI"     }}},
+
+//(const mi_tree_t          []){{ def::menu_category_t::menu_system,202,  2   , { "MIDI Input Setting", "MIDI入力設定" }}},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,203,   3  , { "CH  1"         , nullptr       },  1 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,204,   3  , { "CH  2"         , nullptr       },  2 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,205,   3  , { "CH  3"         , nullptr       },  3 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,206,   3  , { "CH  4"         , nullptr       },  4 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,207,   3  , { "CH  5"         , nullptr       },  5 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,208,   3  , { "CH  6"         , nullptr       },  6 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,209,   3  , { "CH  7"         , nullptr       },  7 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,210,   3  , { "CH  8"         , nullptr       },  8 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,211,   3  , { "CH  9"         , nullptr       },  9 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,212,   3  , { "CH 10"         , nullptr       }, 10 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,213,   3  , { "CH 11"         , nullptr       }, 11 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,214,   3  , { "CH 12"         , nullptr       }, 12 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,215,   3  , { "CH 13"         , nullptr       }, 13 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,216,   3  , { "CH 14"         , nullptr       }, 14 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,217,   3  , { "CH 15"         , nullptr       }, 15 }},
+//(const mi_midi_input_t    []){{ def::menu_category_t::menu_system,218,   3  , { "CH 16"         , nullptr       }, 16 }},
+
 // TODO:これ追加  OFF,80,81-89,90 (初期値80)
 //(const mi_ble_midi_t      []){{ def::menu_category_t::menu_system,202,   3 , { "#CC Assignment" , "#CC割当"     }}},
   (const mi_imu_velocity_t  []){{ def::menu_category_t::menu_system,202,  2  , { "IMU Velocity"   , "IMUベロシティ"}}},
