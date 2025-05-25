@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include <M5Unified.h>
 
 #include "task_i2s.hpp"
@@ -233,6 +236,7 @@ void task_i2s_t::task_func(task_i2s_t* me)
 
 // M5_LOGE("readsize: %d", readsize);
 /* デバッグ用 ノコギリ波をミキシングする
+static int32_t value;
 int add = system_registry.internal_input.get16(0);
 for (int i = 0; i < i2s_dma_frame_num; i++) {
   i2sbuf[i] = (i2sbuf[i] + (value << 12)) >> 2;
@@ -247,6 +251,11 @@ for (int i = 0; i < i2s_dma_frame_num; i++) {
     _i2s_write(bufdata, buf_size, &transfer_size, 128);
   }
 #endif
+}
+
+void task_i2s_t::playRaw(float samplerate, const int16_t* src, size_t len, bool stereo)
+{
+  
 }
 
 //-------------------------------------------------------------------------

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include <M5Unified.h>
 
 #include "common_define.hpp"
@@ -27,6 +30,7 @@ static uint32_t getColorByCommand(const def::command::command_param_t &command_p
   case def::command::chord_modifier:
     color = system_registry.color_setting.getButtonModifierColor();
     break;
+  case def::command::autoplay_switch:
   case def::command::chord_minor_swap:
     color = system_registry.color_setting.getButtonMinorSwapColor();
     break;
@@ -40,10 +44,11 @@ static uint32_t getColorByCommand(const def::command::command_param_t &command_p
     color = system_registry.color_setting.getButtonDrumColor();
     break;
   case def::command::part_on:
-    color = system_registry.color_setting.getEnablePartColor();
-    break;
   case def::command::part_off:
-    color = system_registry.color_setting.getDisablePartColor();
+    color = system_registry.color_setting.getButtonPartColor();
+    if (!system_registry.chord_play.getPartNextEnable(command_param.getParam() - 1)) {
+      color = (color >> 1) & 0x7F7F7F;
+    }
     break;
   case def::command::part_edit:
     color = system_registry.color_setting.getArpeggioNoteBackColor();
@@ -291,7 +296,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
   case def::command::drum_button:
   case def::command::chord_beat:
   case def::command::chord_step_reset_request:
-  case def::command::autoplay_toggle:
+  case def::command::autoplay_switch:
     system_registry.player_command.addQueue(command_param, is_pressed);
     break;
 
@@ -321,10 +326,13 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
 
   case def::command::slot_select:
     if (is_pressed) {
-      uint8_t slot_index = param - 1;
-      setSlotIndex(slot_index);
-
-      changeCommandMapping();
+      // パターン編集モードの場合、スロット切替を許可しない
+      if (system_registry.runtime_info.getPlayMode() != def::playmode::playmode_t::chord_edit_mode) {
+        uint8_t slot_index = param - 1;
+        setSlotIndex(slot_index);
+  
+        changeCommandMapping();
+      }
     }
     break;
 
@@ -333,8 +341,8 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
       system_registry.runtime_info.setButtonMappingSwitch(param);
       // system_registry.working_command.set(def::command::swap_sub_button);
 
-      // パターン編集モードでない場合、アルペジエータのステップを先頭に戻す
-      if (system_registry.runtime_info.getPlayMode() != def::playmode::playmode_t::chord_edit_mode) {
+      // コード演奏モードの場合、アルペジエータのステップを先頭に戻す
+      if (system_registry.runtime_info.getCurrentMode() == def::playmode::playmode_t::chord_mode) {
         system_registry.player_command.addQueue( { def::command::chord_step_reset_request, 1 } );
       }
 
@@ -668,6 +676,10 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
       case def::command::mf_exit: // 親階層に戻る
         if (!menu_control.exit()) {
           // 最上位メニューから抜け時の処理
+
+          // メニューから抜ける時はオートプレイは無効にする
+          system_registry.runtime_info.setChordAutoplayState(def::play::auto_play_mode_t::auto_play_none);
+
           system_registry.runtime_info.setMenuVisible( false );
           changeCommandMapping();
           system_registry.save();
@@ -1027,8 +1039,14 @@ void task_operator_t::changeCommandMapping(void)
     break;
 
   case def::playmode::playmode_t::menu_mode:
-    main_map = def::command::command_mapping_menu_table;
-    sub_map = def::command::command_mapping_sub_button_menu_table;
+      static constexpr const def::command::command_param_array_t* tbl[] = {
+        def::command::command_mapping_menu_table,
+        def::command::command_mapping_menu_alt1_table,
+        def::command::command_mapping_menu_alt2_table,
+        def::command::command_mapping_menu_alt3_table,
+      };
+      main_map = tbl[map_index];
+      sub_map = def::command::command_mapping_sub_button_normal_table;
     break;
   }
 

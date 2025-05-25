@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #ifndef KANPLAY_COMMON_DEFINE_HPP
 #define KANPLAY_COMMON_DEFINE_HPP
 
@@ -288,7 +291,7 @@ Button Index mapping
       edit_function,
       edit_exit,
       edit_enc2_target,
-      autoplay_toggle,
+      autoplay_switch,
       note_scale_set, note_scale_ud,
       sound_effect,
       sub_button,
@@ -327,7 +330,7 @@ Button Index mapping
       (const char*[]){ "-", "←", "→", "↓", "↑", "<<", ">>", "Home", "On", "Off", "Mute", "ON/of", "CLEAR", "COPY", "PASTE" },            // edit_function
       (const char*[]){ "-", "×", "SAVE" },            // edit_exit
       (const char*[]){ "-", "Vol %", "Oct", "Voicing", "Velo %", "Tone", "Anchor", "LoopLen", "Stroke" },   // edit_enc2_target
-      (const char*[]){ "-", "Auto", },                  // autoplay_toggle
+      (const char*[]){ "-", "Auto", "Play", "Stop" },  // autoplay_switch
       (const char*[]){ "-", "Penta", "Major", "Chroma", "Blues", "Japan", }, // note_scale_set
     };
     enum menu_function_t : uint8_t {
@@ -338,6 +341,9 @@ Button Index mapping
     };
     enum edit_enc2_target_t : uint8_t {
       part_vol = 1, position, voicing, velocity, program, banlift, endpoint, displacement,
+    };
+    enum autoplay_switch_t : uint8_t {
+      autoplay_off = 0, autoplay_toggle, autoplay_start, autoplay_stop,
     };
     enum step_advance_t : uint8_t {
       on_beat = 1,
@@ -487,25 +493,14 @@ Button Index mapping
       { edit_enc2_target, edit_enc2_target_t::banlift     },
       { edit_enc2_target, edit_enc2_target_t::displacement},
     };
-    // サブボタンのコマンド割当 (メニュー表示時)
-    static constexpr const command_param_array_t command_mapping_sub_button_menu_table[] = {
-      { none },
-      { none },
-      { none },
-      { none },
-      { none },
-      { none },
-      { none },
-      { none },
-    };
     // メニュー表示時のボタン-コマンドマッピング
     static constexpr const command_param_array_t command_mapping_menu_table[] = {
       { menu_function, mf_1 }, { menu_function, mf_2 }, { menu_function, mf_3 }, { menu_function, mf_0 }, { none, },
       { menu_function, mf_4 }, { menu_function, mf_5 }, { menu_function, mf_6 }, { menu_function, mf_exit }, { menu_function, mf_enter },
-      { menu_function, mf_7 }, { menu_function, mf_8 }, { menu_function, mf_9 }, { none }, { none, },
+      { menu_function, mf_7 }, { menu_function, mf_8 }, { menu_function, mf_9 }, { autoplay_switch, autoplay_stop }, { autoplay_switch, autoplay_start },
       { sub_button  , 1 }, { sub_button, 2 }, { sub_button, 3 }, { sub_button, 4 },
       { menu_function, mf_exit }, { menu_function, mf_enter }, // SIDE_1, SIDE_2
-      { menu_function, mf_up }, { menu_function, mf_down }, { menu_function, mf_enter }, // KNOB_L, KNOB_R, KNOB_K
+      { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { menu_function, mf_down }, { menu_function, mf_up }, { menu_function, mf_enter },  // ENC2_DOWN, ENC2_UP, ENC2_PUSH
       { menu_function, mf_up }, { menu_function, mf_down }, // ENC3_DOWN, ENC3_UP
@@ -541,7 +536,7 @@ Button Index mapping
       { chord_degree, 4 }, { chord_degree  , 5 }, {   chord_degree, 6 }, { chord_modifier  , KANTANMusic_Modifier_7  } , { chord_modifier, KANTANMusic_Modifier_M7   },
       { chord_degree, 7 }, { chord_semitone, 1 }, { chord_semitone, 2 }, { chord_modifier  , KANTANMusic_Modifier_dim} , { chord_modifier, KANTANMusic_Modifier_sus4 },
       { sub_button  , 1 }, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { menu_open, menu_system },  // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -553,7 +548,7 @@ Button Index mapping
       { note_button,  6 }, { note_button,  7 }, { note_button,  8 }, { note_button,  9 }, { note_button, 10 },
       { note_button, 11 }, { note_button, 12 }, { note_button, 13 }, { note_button, 14 }, { note_button, 15 },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { menu_open, menu_system },  // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -565,7 +560,7 @@ Button Index mapping
       { drum_button,  6 }, { drum_button,  7 }, { drum_button,  8 }, { drum_button,  9 }, { drum_button, 10 },
       { drum_button, 11 }, { drum_button, 12 }, { drum_button, 13 }, { drum_button, 14 }, { drum_button, 15 },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { menu_open, menu_system },  // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -577,7 +572,7 @@ Button Index mapping
       { part_on, 1 }, { part_on, 2 }, { part_on, 3 }, { none }, { none },
       { play_mode_set, playmode::chord_mode}, { play_mode_set, playmode::note_mode}, { play_mode_set, playmode::drum_mode }, { none }, { none },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -589,7 +584,7 @@ Button Index mapping
       { part_off, 1 }, { part_off, 2 }, { part_off, 3 }, { none }, { none },
       { play_mode_set, playmode::chord_mode}, { play_mode_set, playmode::note_mode}, { play_mode_set, playmode::drum_mode }, { none }, { none },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -601,7 +596,7 @@ Button Index mapping
       { part_edit, 1 }, { part_edit, 2 }, { part_edit, 3 }, { none }, { none },
       { play_mode_set, playmode::chord_mode}, { play_mode_set, playmode::note_mode}, { play_mode_set, playmode::drum_mode }, { none }, { none },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -613,7 +608,7 @@ Button Index mapping
       { none }, { none }, { none }, { none }, { none },
       { play_mode_set, playmode::chord_mode}, { play_mode_set, playmode::note_mode}, { play_mode_set, playmode::drum_mode }, { none }, { none },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
@@ -625,12 +620,49 @@ Button Index mapping
       { none }, { none }, { none }, { none }, { none },
       { play_mode_set, playmode::chord_mode}, { play_mode_set, playmode::note_mode}, { play_mode_set, playmode::drum_mode }, { none }, { none },
       { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
-      { menu_open, menu_system }, { autoplay_toggle, 1 }, // SIDE_1, SIDE_2
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
       { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
       { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
       { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
       { master_key_ud, -1}, { master_key_ud,  1 }, // ENC3_DOWN, ENC3_UP
     };
+    // メニュー表示時のボタンマッピングチェンジ状態(レバー手前)でのコマンドマッピング
+    static constexpr const command_param_array_t command_mapping_menu_alt1_table[] = {
+      { part_on, 4 }, { part_on, 5 }, { part_on, 6 }, { none }, { none },
+      { part_on, 1 }, { part_on, 2 }, { part_on, 3 }, { none }, { none },
+      { none }, { none }, { none }, { none }, { none },
+      { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
+      { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
+      { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
+      { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
+      { master_key_ud, -1}, { master_key_ud,  1 }, // ENC3_DOWN, ENC3_UP
+    };
+    // メニュー表示時のボタンマッピングチェンジ状態(レバー奥)でのコマンドマッピング
+    static constexpr const command_param_array_t command_mapping_menu_alt2_table[] = {
+      { part_off, 4 }, { part_off, 5 }, { part_off, 6 }, { none }, { none },
+      { part_off, 1 }, { part_off, 2 }, { part_off, 3 }, { none }, { none },
+      { none }, { none }, { none }, { none }, { none },
+      { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
+      { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
+      { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
+      { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
+      { master_key_ud, -1}, { master_key_ud,  1 }, // ENC3_DOWN, ENC3_UP
+    };
+    // メニュー表示時のボタンマッピングチェンジ状態でのコマンドマッピング
+    static constexpr const command_param_array_t command_mapping_menu_alt3_table[] = {
+      { part_edit, 4 }, { part_edit, 5 }, { part_edit, 6 }, { none }, { none },
+      { part_edit, 1 }, { part_edit, 2 }, { part_edit, 3 }, { none }, { none },
+      { none }, { none }, { none }, { none }, { none },
+      { sub_button  , 1}, { sub_button, 2}, { sub_button, 3 }, { sub_button, 4 },
+      { menu_open, menu_system }, { autoplay_switch, autoplay_toggle }, // SIDE_1, SIDE_2
+      { mapping_switch, 1}, { mapping_switch, 2 }, { mapping_switch, 3}, // KNOB_L, KNOB_R, KNOB_K
+      { master_vol_ud, -1}, { master_vol_ud , 1 }, { panic_stop }, // ENC1_DOWN, ENC1_UP, ENC1_PUSH
+      { none }, { none }, { none },   // ENC2_DOWN, ENC2_UP, ENC2_PUSH
+      { master_key_ud, -1}, { master_key_ud,  1 }, // ENC3_DOWN, ENC3_UP
+    };
+
 
     // Port A デバイス用のボタン-コマンドマッピング
     static constexpr const command_param_array_t command_mapping_external_table[] = {
@@ -850,8 +882,8 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 3;
-    static constexpr const uint32_t app_version_patch = 1;
-    static constexpr const char app_version_string[] = "031";
+    static constexpr const uint32_t app_version_patch = 2;
+    static constexpr const char app_version_string[] = "032";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
@@ -1003,7 +1035,7 @@ Button Index mapping
       { "slash 5 flat" , { "/5♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 5 } },
       { "slash 5"      , { "/5"            , nullptr               }, {                                  command::chord_bass_degree, 5 } },
       { "slash 6 flat" , { "/6♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 6 } },
-      { "slash 7"      , { "/6"            , nullptr               }, {                                  command::chord_bass_degree, 6 } },
+      { "slash 6"      , { "/6"            , nullptr               }, {                                  command::chord_bass_degree, 6 } },
       { "slash 7 flat" , { "/7♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 7 } },
       { "slash 7"      , { "/7"            , nullptr               }, {                                  command::chord_bass_degree, 7 } },
       { "swap[7]"      , { "〜[ 7 ]"        , nullptr              }, {                                  command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    } },
@@ -1111,7 +1143,7 @@ Button Index mapping
       { "slash 5 flat" , { "/5♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 5 } },
       { "slash 5"      , { "/5"            , nullptr               }, {                                  command::chord_bass_degree, 5 } },
       { "slash 6 flat" , { "/6♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 6 } },
-      { "slash 7"      , { "/6"            , nullptr               }, {                                  command::chord_bass_degree, 6 } },
+      { "slash 6"      , { "/6"            , nullptr               }, {                                  command::chord_bass_degree, 6 } },
       { "slash 7 flat" , { "/7♭"          , nullptr               }, { command::chord_bass_semitone, 1, command::chord_bass_degree, 7 } },
       { "slash 7"      , { "/7"            , nullptr               }, {                                  command::chord_bass_degree, 7 } },
       { "swap[7]"      , { "〜[ 7 ]"        , nullptr              }, {                                  command::chord_minor_swap, 1, command::chord_modifier, KANTANMusic_Modifier_7    } },

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #ifndef KANPLAY_TASK_I2S_HPP
 #define KANPLAY_TASK_I2S_HPP
 
@@ -14,6 +17,8 @@ namespace kanplay_ns {
 class task_i2s_t {
 public:
     bool start(void);
+
+    void playRaw(float samplerate, const int16_t* src, size_t len, bool stereo);
 private:
     static void task_func(task_i2s_t* me);
 };

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #ifndef KANPLAY_TASK_COMMANDER_HPP
 #define KANPLAY_TASK_COMMANDER_HPP
 

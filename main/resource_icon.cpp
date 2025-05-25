@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include "resource_icon.hpp"
 
 namespace kanplay_ns {

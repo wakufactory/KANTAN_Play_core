@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include "internal_bmi270.hpp"
 
 #include <M5Unified.h>

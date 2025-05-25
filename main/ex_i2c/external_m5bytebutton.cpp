@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include "external_m5bytebutton.hpp"
 
 #include <M5Unified.h>

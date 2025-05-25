@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #ifndef KANPLAY_SYSTEM_REGISTRY_HPP
 #define KANPLAY_SYSTEM_REGISTRY_HPP
 
@@ -961,6 +964,7 @@ protected:
             BUTTON_WORKING_TEXT_COLOR = 0x38,
             BUTTON_DEFAULT_TEXT_COLOR = 0x3C,
             BUTTON_MENU_NUMBER_COLOR = 0x40,
+            BUTTON_PART_COLOR = 0x44,
         };
         void setEnablePartColor(uint32_t color) { set32(ENABLE_PART_COLOR, color); }
         uint32_t getEnablePartColor(void) const { return get32(ENABLE_PART_COLOR); }
@@ -996,6 +1000,8 @@ protected:
         uint32_t getButtonDefaultTextColor(void) const { return get32(BUTTON_DEFAULT_TEXT_COLOR); }
         void setButtonMenuNumberColor(uint32_t color) { set32(BUTTON_MENU_NUMBER_COLOR, color); }
         uint32_t getButtonMenuNumberColor(void) const { return get32(BUTTON_MENU_NUMBER_COLOR); }
+        void setButtonPartColor(uint32_t color) { set32(BUTTON_PART_COLOR, color); }
+        uint32_t getButtonPartColor(void) const { return get32(BUTTON_PART_COLOR); }
     };
 
     struct reg_menu_status_t : public registry_t {

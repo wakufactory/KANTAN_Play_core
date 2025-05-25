@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #include <M5Unified.h>
 
 #include "common_define.hpp"
@@ -90,15 +93,38 @@ bool task_kantanplay_t::commandProccessor(void)
     procChordStepResetRequest(command_param, is_pressed);
     break;
 
-  case def::command::autoplay_toggle:
+  case def::command::autoplay_switch:
     if (is_pressed)
     { // 自動演奏モードのオン・オフのトグル
       auto autoplay = system_registry.runtime_info.getChordAutoplayState();
-      if (autoplay == def::play::auto_play_mode_t::auto_play_none) {
-        autoplay = def::play::auto_play_mode_t::auto_play_waiting;
-// M5_LOGV("looping_msec: %d, onbeat_msec: %d  bpm:%d", looping_usec / 1000, onbeat_usec / 1000, 60000000 / looping_usec);
-      } else {
+
+      // OTA実行中はオートプレイ禁止
+      if (system_registry.runtime_info.getWiFiOtaProgress() != 0) {
         autoplay = def::play::auto_play_mode_t::auto_play_none;
+      } else {
+        switch (command_param.getParam()) {
+          case def::command::autoplay_switch_t::autoplay_toggle:
+            if (autoplay == def::play::auto_play_mode_t::auto_play_none) {
+              autoplay = def::play::auto_play_mode_t::auto_play_waiting;
+            } else {
+              autoplay = def::play::auto_play_mode_t::auto_play_none;
+            }
+            break;
+  
+          case def::command::autoplay_switch_t::autoplay_start:
+            if (autoplay != def::play::auto_play_mode_t::auto_play_running) {
+              autoplay = def::play::auto_play_mode_t::auto_play_waiting;
+              system_registry.runtime_info.setChordAutoplayState(autoplay);
+              // procChordBeat({ def::command::chord_beat, def::command::step_advance_t::on_beat }, is_pressed);
+              // system_registry.player_command.addQueue( { def::command::chord_beat, def::command::step_advance_t::on_beat } );
+              system_registry.player_command.addQueue( { def::command::chord_degree, 1 } );
+            }
+            break;
+  
+          case def::command::autoplay_switch_t::autoplay_stop:
+            autoplay = def::play::auto_play_mode_t::auto_play_none;
+            break;
+        }
       }
     // M5_LOGV("autoplay %d", (int)autoplay);
       system_registry.runtime_info.setChordAutoplayState(autoplay);

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 InstaChord Corp.
+
 #ifndef MIDI_TRANSPORT_UART_HPP
 #define MIDI_TRANSPORT_UART_HPP
 
