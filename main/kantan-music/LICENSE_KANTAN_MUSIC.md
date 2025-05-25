@@ -24,11 +24,11 @@ The KANTAN Music API in this folder is provided under the following terms:
 
 - Free to use in software applications.
 - When used, you must indicate "Compliant with KANTAN Music".
-- Notification to InstaChord Inc. is required when publishing or distributing software.
+- Notification to InstaChord Corp. is required when publishing or distributing software.
 - For hardware applications: prototypes and personal projects (fewer than 1000 units) may use under the same conditions as software.
 - For production of 1000 units or more, a license fee of $1 USD per unit applies.
 - Decompilation of the binary source code is prohibited.
-- "KANTAN Music" is a registered trademark of InstaChord Inc.
+- "KANTAN Music" is a registered trademark of InstaChord Corp.
 
-For inquiries or license agreement discussions, please contact InstaChord Inc.
+For inquiries or license agreement discussions, please contact InstaChord Corp.
 
