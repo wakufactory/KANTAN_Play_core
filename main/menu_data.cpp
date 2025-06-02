@@ -122,10 +122,10 @@ struct mi_tree_t : public menu_item_t {
 
     while (tmp > max_value && tmp >= 10)
     {
-      auto div = 10000;
-      if      (tmp >= 1000) { div = 1000; }
+      int div = 10;
+      if      (tmp >= 10000) { div = 10000; }
+      else if (tmp >= 1000) { div = 1000; }
       else if (tmp >= 100) { div = 100; }
-      else if (tmp >= 10) { div = 10;}
       tmp %= div;
     }
 
@@ -234,10 +234,10 @@ struct mi_normal_t : public menu_item_t {
 
     while (tmp > max_value && tmp >= 10)
     {
-      auto div = 10000;
-      if      (tmp >= 1000) { div = 1000; }
+      int div = 10;
+      if      (tmp >= 10000) { div = 10000; }
+      else if (tmp >= 1000) { div = 1000; }
       else if (tmp >= 100) { div = 100; }
-      else if (tmp >= 10) { div = 10;}
       tmp %= div;
     }
 

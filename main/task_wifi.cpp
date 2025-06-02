@@ -548,7 +548,7 @@ static esp_err_t response_ssid_handler(httpd_req_t *req) {
 }
 
 static esp_err_t response_post_wifi_handler(httpd_req_t *req) {
-  char buf[256];
+  char buf[256] = { 0 };
   int ret, len = req->content_len;
   if (len > sizeof(buf)) len = sizeof(buf);
   if ((ret = httpd_req_recv(req, buf, len)) <= 0) {

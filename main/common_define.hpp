@@ -882,8 +882,8 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 3;
-    static constexpr const uint32_t app_version_patch = 2;
-    static constexpr const char app_version_string[] = "032";
+    static constexpr const uint32_t app_version_patch = 3;
+    static constexpr const char app_version_string[] = "033";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
