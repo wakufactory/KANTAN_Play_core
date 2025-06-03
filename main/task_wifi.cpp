@@ -547,29 +547,49 @@ static esp_err_t response_ssid_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
-static esp_err_t response_post_wifi_handler(httpd_req_t *req) {
-  char buf[256] = { 0 };
-  int ret, len = req->content_len;
-  if (len > sizeof(buf)) len = sizeof(buf);
-  if ((ret = httpd_req_recv(req, buf, len)) <= 0) {
-    return ESP_FAIL;
+static std::string url_decode(const std::string& str) {
+  std::string decoded;
+  for (int i = 0; i < str.length(); i++) {
+    char ch = str[i];
+    if (ch == '%') {
+      int ii;
+      sscanf(str.substr(i + 1, 2).c_str(), "%x", &ii);
+      ch = static_cast<char>(ii);
+      i += 2;
+    } else if (ch == '+') {
+      ch = ' ';
+    }
+    decoded += ch;
   }
+  return decoded;
+}
 
-  char ssid[128] = { 0 };
-  char password[128] = { 0 };
-  auto res_s = httpd_query_key_value(buf, "s", ssid, sizeof(ssid));
-  auto res_p = httpd_query_key_value(buf, "p", password, sizeof(password));
-
-  // SSID文字列の "+" を " " に置換
-  for (int i = 0; ssid[i]; ++i) {
-    if (ssid[i] == '+') {
-      ssid[i] = ' ';
+static esp_err_t response_post_wifi_handler(httpd_req_t *req) {
+  int ret, len = req->content_len;
+  std::string ssid, password;
+  esp_err_t res;
+  {  
+    std::vector<char> res_buf (len+1, 0);
+    if ((ret = httpd_req_recv(req, res_buf.data(), len)) <= 0) {
+      return ESP_FAIL;
+    }
+    std::vector<char> buf (len+1, 0);
+    memset(buf.data(), 0, buf.size());
+    res = httpd_query_key_value(res_buf.data(), "s", buf.data(), buf.size());
+    if (res == ESP_OK) {
+      ssid = url_decode(buf.data());
+      memset(buf.data(), 0, buf.size());
+      res = httpd_query_key_value(res_buf.data(), "p", buf.data(), buf.size());
+      if (res == ESP_OK) {
+        password = url_decode(buf.data());
+      }
     }
   }
+
   // M5_LOGD("ssid : %s  password : %s", ssid, password);
 
-  if (res_s == ESP_OK) {
-    WiFi.begin(ssid, password);
+  if (res == ESP_OK) {
+    WiFi.begin(ssid.c_str(), password.c_str());
     system_registry.wifi_control.setMode(def::command::wifi_mode_t::wifi_enable_sta);
     system_registry.wifi_control.setOperation(def::command::wifi_operation_t::wfop_disable);
     return response_redirect(req, "/");
