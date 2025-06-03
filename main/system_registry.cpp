@@ -434,7 +434,7 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
 
   {
     auto json = json_root["user_setting"].to<JsonObject>();
-  
+
     json["led_brightness"]       = user_setting.getLedBrightness();
     json["display_brightness"]   = user_setting.getDisplayBrightness();
     json["language"]    = (uint8_t)user_setting.getLanguage();
@@ -455,7 +455,7 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
       for (int btn = 1; btn <= 15; ++btn) {
         auto cmd = command_mapping_custom_main.getCommandParamArray(btn - 1);
         auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::playbutton_table, cmd);
-        if (index < 0) continue;
+        if (index < 0) { continue; }
         json[std::to_string(btn)] = def::ctrl_assign::playbutton_table[index].jsonname;
       }
     }
@@ -465,7 +465,7 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
         auto cmd = command_mapping_external.getCommandParamArray(btn - 1);
         if (cmd.empty()) { continue; }
         auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::external_table, cmd);
-        if (index < 0) continue;
+        if (index < 0) { continue; }
         json[std::to_string(btn)] = def::ctrl_assign::external_table[index].jsonname;
       }
     }
@@ -475,13 +475,15 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
         auto cmd = command_mapping_midinote.getCommandParamArray(btn - 1);
         if (cmd.empty()) { continue; }
         auto index = def::ctrl_assign::get_index_from_command(def::ctrl_assign::external_table, cmd);
-        if (index < 0) continue;
+        if (index < 0) { continue; }
         json[std::to_string(btn)] = def::ctrl_assign::external_table[index].jsonname;
       }
     }
   }
 
   auto result = serializeJson(json_root, (char*)data, data_length);
+printf("saveSettingJSON result: %d\n", result);
+
   return result;
 }
 
@@ -543,9 +545,9 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
           } else {
             for (int btn = 1; btn <= 15; ++btn) {
               auto name = json[std::to_string(btn)].as<const char*>();
-              if (name == nullptr) continue;
+              if (name == nullptr) { continue; }
               auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::playbutton_table, name);
-              if (index < 0) continue;
+              if (index < 0) { continue; }
               command_mapping_custom_main.setCommandParamArray(btn - 1, def::ctrl_assign::playbutton_table[index].command);
             }
           }
@@ -557,9 +559,9 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
           command_mapping_external.reset();
           for (int btn = 1; btn <= def::hw::max_button_mask; ++btn) {
             auto name = json[std::to_string(btn)].as<const char*>();
-            if (name == nullptr) continue;
+            if (name == nullptr) { continue; }
             auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::external_table, name);
-            if (index < 0) continue;
+            if (index < 0) { continue; }
             command_mapping_external.setCommandParamArray(btn - 1, def::ctrl_assign::external_table[index].command);
           }
         }
@@ -570,9 +572,9 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
           command_mapping_midinote.reset();
           for (int btn = 1; btn <= def::midi::max_note; ++btn) {
             auto name = json[std::to_string(btn)].as<const char*>();
-            if (name == nullptr) continue;
+            if (name == nullptr) { continue; }
             auto index = def::ctrl_assign::get_index_from_jsonname(def::ctrl_assign::external_table, name);
-            if (index < 0) continue;
+            if (index < 0) { continue; }
             command_mapping_midinote.setCommandParamArray(btn - 1, def::ctrl_assign::external_table[index].command);
           }
         }
