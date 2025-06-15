@@ -183,8 +183,13 @@ size_t MIDI_Transport_BLE::write(const uint8_t* data, size_t length)
 
   std::vector<uint8_t> txbuf;
   txbuf.clear();
-  txbuf.push_back(0x80); // TODO:BLEMIDI TimeStamp High
-  txbuf.push_back(0x80); // TODO:BLEMIDI TimeStamp Low
+  uint32_t us = esp_timer_get_time();  // 現在のマイクロ秒
+  uint16_t timestamp = (us / 1000) & 0x1FFF;  // 13bit
+  uint8_t ts_high = 0x80 | ((timestamp >> 7) & 0x3F);
+  uint8_t ts_low = 0x80 | (timestamp & 0x7F);
+  txbuf.push_back(ts_high); // TODO:BLEMIDI TimeStamp High
+  txbuf.push_back(ts_low); // TODO:BLEMIDI TimeStamp Low
+
   txbuf.insert(txbuf.end(), data, data + length);
   pCharacteristic->setValue( txbuf.data(), txbuf.size());
   // pCharacteristic->setValue( const_cast<uint8_t*>(data), length);
