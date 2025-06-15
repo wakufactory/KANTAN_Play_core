@@ -319,7 +319,7 @@ void task_commander_t::task_func(task_commander_t* me)
 {
   uint32_t delay_msec = 0;
 
-  system_registry.popup_qr.setQRCodeType(def::qrcode_type_t::QRCODE_URL_MANUAL);
+//  system_registry.popup_qr.setQRCodeType(def::qrcode_type_t::QRCODE_URL_MANUAL);  //初期QRださない
 
 #if defined (M5UNIFIED_PC_BUILD)
   M5.delay(2000);
