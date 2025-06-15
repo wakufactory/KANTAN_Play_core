@@ -79,12 +79,6 @@ void setup() {
   log_memory(11); M5.delay(16); M5.Display.print("."); task_commander.start();
   log_memory(12); M5.delay(16); M5.Display.print("."); task_spi.start();
 
-  { // 起動直後のファイルを読込
-    kanplay_ns::def::app::file_command_info_t songinfo;
-    songinfo.file_index = -1; // 末尾のデータ ( 99_Sample.json ) を読み込むため-1を指定する
-    songinfo.dir_type = kanplay_ns::def::app::data_type_t::data_song_preset;
-    kanplay_ns::system_registry.file_command.setFileLoadRequest(songinfo);
-  }
 }
 
 void loop() {

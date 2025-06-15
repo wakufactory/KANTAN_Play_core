@@ -11,6 +11,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <string>
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -1092,6 +1093,12 @@ protected:
     static constexpr const size_t raw_wave_length = 320;
     std::pair<uint8_t, uint8_t> raw_wave[raw_wave_length] = { { 128, 128 },};
     uint16_t raw_wave_pos = 0;
+
+    // Last saved song file name (persistent)
+    def::app::file_command_info_t last_loaded_song_info; 
+    void setLastSongInfo(const def::app::file_command_info_t& info) {
+        last_loaded_song_info = info;
+    }
 };
 
 //-------------------------------------------------------------------------

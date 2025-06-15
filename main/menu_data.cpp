@@ -1461,7 +1461,26 @@ protected:
     songinfo.dir_type = _dir_type;
     system_registry.file_command.setFileLoadRequest(songinfo);
     system_registry.file_command.setCurrentSongInfo(songinfo);
+    system_registry.setLastSongInfo(songinfo); 
+    system_registry.save();
     return mi_filelist_t::execute();
+  }
+};
+struct mi_test_t : public mi_normal_t {
+  constexpr mi_test_t(def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title)
+    : mi_normal_t{cate, seq, level, title} {}
+  const char* getValueText(void) const override { return "..."; }
+  const char* getSelectorText(size_t index) const override { return _title.get(); }
+  size_t getSelectorCount(void) const override { return 1; }
+
+  bool execute(void) const override {
+
+    printf("test menu executed\n");
+    return mi_normal_t::execute();
+  }
+  bool exit(void) const override
+  {
+    return  mi_normal_t::exit(); ;
   }
 };
 
@@ -1772,6 +1791,7 @@ static constexpr menu_item_ptr menu_system[] = {
   (const mi_vol_adcmic_t    []){{ def::menu_category_t::menu_system,211,   3 , { "ADC MicAmp"     , "ADCマイクアンプ" }}},
   (const mi_all_reset_t     []){{ def::menu_category_t::menu_system,212,  2  , { "Reset All Settings", "全設定リセット"    }}},
   (const mi_manual_qr_t     []){{ def::menu_category_t::menu_system,213, 1   , { "Manual QR"      , "説明書QR"     }}},
+  (const mi_test_t      []){{ def::menu_category_t::menu_system,  214, 1 , { "test"         , "テスト"         }}},
   nullptr, // end of menu
 };
 // const size_t menu_system_size = sizeof(menu_system) / sizeof(menu_system[0]) - 1;
@@ -1800,8 +1820,9 @@ static constexpr menu_item_ptr menu_part[] = {
 };
 // const size_t menu_part_size = sizeof(menu_part) / sizeof(menu_part[0]) - 1;
 
+
 static constexpr menu_item_ptr menu_file[] = {
-  (const mi_tree_t        []){{ def::menu_category_t::menu_file,  0,0  , { "File"           , "ファイル"       }}},
+  (const mi_tree_t        []){{ def::menu_category_t::menu_file,  0,0  , { "File"           , "ファイル"       }}}, 
   (const mi_load_file_t   []){{ def::menu_category_t::menu_file,  1, 1 , { "Load"           , "読込"           }, def::app::data_type_t::data_song_users }},
   (const mi_load_file_t   []){{ def::menu_category_t::menu_file,  2, 1 , { "Load Preset"    , "プリセット読込"  }, def::app::data_type_t::data_song_extra }},
   (const mi_save_t        []){{ def::menu_category_t::menu_file,  3, 1 , { "Save"           , "保存"           }, def::app::data_type_t::data_song_users }},

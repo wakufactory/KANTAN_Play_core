@@ -2,7 +2,7 @@
 // Copyright (c) 2025 InstaChord Corp.
 
 #include "system_registry.hpp"
-
+#include <string>
 #include "file_manage.hpp"
 
 #include <M5Unified.hpp>
@@ -251,23 +251,23 @@ void system_registry_t::reset(void)
     drum_mapping.set8(i, def::play::drum::drum_note_table[0][i]);
   }
 
-  color_setting.setArpeggioNoteBackColor(0x103E8D);
-  color_setting.setEnablePartColor(      0x204E9D);
-  color_setting.setDisablePartColor(     0x0B255E);
-  color_setting.setArpeggioNoteForeColor(0xDDEEFF);
-  color_setting.setArpeggioNoteBackColor(0x103E8D);
-  color_setting.setArpeggioStepColor(    0x60AEBD);
+  color_setting.setArpeggioNoteBackColor(0x8D1010);
+  color_setting.setEnablePartColor(      0x9D2020);
+  color_setting.setDisablePartColor(     0x5E0B0B);
+  color_setting.setArpeggioNoteForeColor(0xFFDDEE);
+  color_setting.setArpeggioNoteBackColor(0x8D1010);
+  color_setting.setArpeggioStepColor(    0xBD6060);
 
-  color_setting.setButtonDegreeColor(    0x8888CC); // コード選択ボタンの色
+  color_setting.setButtonDegreeColor(    0xCC8888); // コード選択ボタンの色
   color_setting.setButtonModifierColor(  0x555555); // Modifierボタンの色
   color_setting.setButtonMinorSwapColor( 0xFF8736); //0xEE8C49u); // メジャー・マイナースワップボタンの色
   color_setting.setButtonSemitoneColor(  0x6D865A); //0x00BC00u); // 半音上げ下げボタンの色
   color_setting.setButtonNoteColor(      0xFF4499); // ノート演奏モードのボタンの色
-  color_setting.setButtonDrumColor(      0x2200D0); // ドラム演奏モードのボタンの色
+  color_setting.setButtonDrumColor(      0xD00022); // ドラム演奏モードのボタンの色
   color_setting.setButtonCursorColor(    0x669966); // カーソルボタンの色
   color_setting.setButtonDefaultColor(   0x333333); // その他のボタンの色
-  color_setting.setButtonMenuNumberColor(0x666699); // メニュー表示時の番号ボタンの色
-  color_setting.setButtonPartColor(      0x2781FF); // パート選択ボタンの色
+  color_setting.setButtonMenuNumberColor(0x996666); // メニュー表示時の番号ボタンの色
+  color_setting.setButtonPartColor(      0xFF8127); // パート選択ボタンの色
 
   color_setting.setButtonPressedTextColor(0xFFFFDD); // ボタンが押された時のテキスト色
   color_setting.setButtonWorkingTextColor(0xFFFFFF); // ボタンが動作中の時のテキスト色
@@ -481,15 +481,17 @@ size_t system_registry_t::saveSettingJSON(uint8_t* data, size_t data_length)
     }
   }
 
+  json_root["last_loaded_song_dir"] = last_loaded_song_info.dir_type ;
+  json_root["last_loaded_song_idx"] = last_loaded_song_info.file_index ;  
   auto result = serializeJson(json_root, (char*)data, data_length);
-printf("saveSettingJSON result: %d\n", result);
+printf("saveSettingJSON result: %s\n", data);
 
   return result;
 }
 
 bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
 {
-
+printf("loadSettingJSON \n") ;
   ArduinoJson::JsonDocument json_root;
   auto error = deserializeJson(json_root, (char*)data, data_length);
   if (error)
@@ -582,6 +584,27 @@ bool system_registry_t::loadSettingJSON(const uint8_t* data, size_t data_length)
     }
   }
 
+  // Load last saved song file name
+  {
+    auto js = json_root["last_loaded_song_dir"];
+    if (!js.isNull()) {
+      last_loaded_song_info.dir_type = (def::app::data_type_t)js.as<int>();
+      last_loaded_song_info.file_index = json_root["last_loaded_song_idx"].as<int>(); 
+    }
+     // 起動直後のファイルを読込
+    kanplay_ns::def::app::file_command_info_t songinfo;
+    songinfo.file_index = kanplay_ns::system_registry.last_loaded_song_info.file_index;
+    songinfo.dir_type = kanplay_ns::system_registry.last_loaded_song_info.dir_type; 
+    printf("resume %d %d\n", songinfo.file_index, (int)songinfo.dir_type); 
+    if(songinfo.dir_type==0) {
+     songinfo.file_index = -1; // 末尾のデータ ( 99_Sample.json ) を読み込むため-1を指定する
+      songinfo.dir_type = kanplay_ns::def::app::data_type_t::data_song_preset;
+    }
+    kanplay_ns::system_registry.file_command.setUpdateList(songinfo.dir_type);
+    M5.delay(64);
+
+    kanplay_ns::system_registry.file_command.setFileLoadRequest(songinfo);
+  }
   return true;
 }
 
