@@ -1,6 +1,7 @@
 # KANTAN Play Core（かんぷれ）アプリケーション  
 # KANTAN Play Core Application
 
+これは wakufactory によるforkです
 ---
 
 ## 概要 / Overview
