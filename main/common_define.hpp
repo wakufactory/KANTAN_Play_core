@@ -830,6 +830,7 @@ Button Index mapping
     static constexpr const uint8_t task_priority_kantanplay = 2; // かんぷれの演奏指示処理はタイミングコントロールが重要なのでmidiと同格にしておく
     static constexpr const uint8_t task_priority_midi = 2;       // MIDIおよびMIDIサブタスクは指示タイミングがずれると演奏品質に問題が出るので優先度は標準より上げておく
     static constexpr const uint8_t task_priority_midi_sub = 2;
+    static constexpr const uint8_t task_priority_joy = 2;   // ジョイスティック入力処理タスクの優先度
 
     // 演奏操作に関わるタスクのみCPU1に割り当てる
     // それ以外のタスクはCPU0に割り当てる
@@ -844,6 +845,7 @@ Button Index mapping
     static constexpr const uint8_t task_cpu_kantanplay = 1;
     static constexpr const uint8_t task_cpu_port_a = 0;
     static constexpr const uint8_t task_cpu_port_b = 0;
+    static constexpr const uint8_t task_cpu_joy = 1;       // ジョイスティック入力処理タスクのCPU割り当て
 
     static constexpr const uint8_t internal_firmware_version = 4;   // かんぷれハードウェア内部STM32ファームウェアバージョン
   };

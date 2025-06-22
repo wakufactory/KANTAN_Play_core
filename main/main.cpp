@@ -15,6 +15,7 @@
 #include "task_operator.hpp"
 #include "task_commander.hpp"
 #include "task_kantanplay.hpp"
+#include "task_joy.hpp"
 #include "system_registry.hpp"
 
 static kanplay_ns::task_spi_t task_spi;
@@ -27,6 +28,7 @@ static kanplay_ns::task_port_b_t task_port_b;
 static kanplay_ns::task_operator_t task_operator;
 static kanplay_ns::task_commander_t task_commander;
 static kanplay_ns::task_kantanplay_t task_kantanplay;
+static kanplay_ns::task_joy_t task_joy;
 
 static void log_memory(int index = 0)
 {
@@ -71,13 +73,14 @@ void setup() {
   log_memory(8); M5.delay(16); M5.Display.print("."); task_port_b.start();
   log_memory(9); M5.delay(16); M5.Display.print("."); task_operator.start();
   log_memory(10); M5.delay(16); M5.Display.print("."); task_kantanplay.start();
+  log_memory(11); M5.delay(16); M5.Display.print("."); task_joy.start();
 
   kanplay_ns::system_registry.internal_input.setButtonBitmask(0x00);
   kanplay_ns::system_registry.operator_command.addQueue( { kanplay_ns::def::command::slot_select, 1 } );
   kanplay_ns::system_registry.operator_command.addQueue( { kanplay_ns::def::command::file_index_set, 0 } );
 
-  log_memory(11); M5.delay(16); M5.Display.print("."); task_commander.start();
-  log_memory(12); M5.delay(16); M5.Display.print("."); task_spi.start();
+  log_memory(12); M5.delay(16); M5.Display.print("."); task_commander.start();
+  log_memory(13); M5.delay(16); M5.Display.print("."); task_spi.start();
 
 }
 
