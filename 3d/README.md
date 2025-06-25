@@ -6,7 +6,7 @@ These `/3d` folder contains 3D CAD data (STP format) for KANTAN Play base.
 ご自由にご利用いただけますが、ライセンスはMITに準拠します。  
 You may use these freely under the same MIT license as this repository.
 
-## 3Dデータのご利用について / About the 3D Data
+## 3Dデータのご利用について / About Using the 3D Data
 
 このデータは金型成形用に設計されたものです。  
 そのため、3Dプリンタで出力した場合、プリンタの精度や特性によってパーツが正しく嵌合しなかったり、ボタンなどの可動部分がうまく動作しない場合があります。  
