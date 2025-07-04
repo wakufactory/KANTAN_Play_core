@@ -1466,23 +1466,6 @@ protected:
     return mi_filelist_t::execute();
   }
 };
-struct mi_test_t : public mi_normal_t {
-  constexpr mi_test_t(def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title)
-    : mi_normal_t{cate, seq, level, title} {}
-  const char* getValueText(void) const override { return "..."; }
-  const char* getSelectorText(size_t index) const override { return _title.get(); }
-  size_t getSelectorCount(void) const override { return 1; }
-
-  bool execute(void) const override {
-
-    printf("test menu executed\n");
-    return mi_normal_t::execute();
-  }
-  bool exit(void) const override
-  {
-    return  mi_normal_t::exit(); ;
-  }
-};
 
 struct mi_save_t : public mi_normal_t {
   constexpr mi_save_t( def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title, def::app::data_type_t dir_type )
@@ -1553,6 +1536,26 @@ protected:
   static std::string _filenames[max_filenames];
 };
 std::string mi_save_t::_filenames[max_filenames];
+
+
+  
+struct mi_test_t : public mi_normal_t {
+  constexpr mi_test_t(def::menu_category_t cate, uint8_t seq, uint8_t level, const localize_text_t& title)
+    : mi_normal_t{cate, seq, level, title} {}
+  static constexpr std::array<std::string,2> submenu = {"menu1","menu2"} ;
+  const char* getValueText(void) const override { return "..."; }
+  const char* getSelectorText(size_t index) const override { return submenu[index].c_str(); }
+  size_t getSelectorCount(void) const override { return submenu.size() ; }
+
+  bool execute(void) const override {
+    printf("test menu executed %d \n",_selecting_value);
+    return mi_normal_t::execute();
+  }
+  bool exit(void) const override
+  {
+    return  mi_normal_t::exit(); ;
+  }
+};
 
 
 static constexpr menu_item_ptr menu_system[] = {
