@@ -15,7 +15,7 @@ public:
     void start(void);
 private:
     static void task_func(task_joy_t* me);
-    bool checkDevice(uint8_t& out) ;
+    bool checkDevice(void) ;
     bool _exists;
 };
 
