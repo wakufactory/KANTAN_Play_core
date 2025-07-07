@@ -67,7 +67,7 @@ bool task_kantanplay_t::commandProccessor(void)
   bool is_pressed;
   if (false == system_registry.player_command.getQueue(&_player_command_history_code, &command_param, &is_pressed))
   { return false; }
-
+// printf("commandProccessor: %d, %d, isPressed %d\n", command_param.getCommand(), command_param.getParam(), is_pressed);
   switch (command_param.getCommand()) {
   default:
     break;
@@ -781,7 +781,8 @@ void task_kantanplay_t::chordStepPlay(void)
 
 void task_kantanplay_t::procSoundEffect(const def::command::command_param_t& command_param, const bool is_pressed)
 {
-  // const auto command = command_param.getCommand();
+  if (!is_pressed) { return; }
+
   auto effect_type = (def::command::sound_effect_t)command_param.getParam();
   int master_key = system_registry.runtime_info.getMasterKey();
   int slot_key = master_key + (int8_t)system_registry.current_slot->slot_info.getKeyOffset();

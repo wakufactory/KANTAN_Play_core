@@ -928,7 +928,7 @@ void task_operator_t::procEditFunction(const def::command::command_param_t& comm
     break;
   }
 
-  // 異動した場合はプレビュー音の再生などを行う
+  // 移動した場合はプレビュー音の再生などを行う
   if (cursor_x != new_x || cursor_y != new_y) {
     if (cursor_y != new_y) {
       if (new_y < 0) { new_y = 0; }
