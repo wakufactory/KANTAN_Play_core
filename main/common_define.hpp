@@ -1025,6 +1025,7 @@ Button Index mapping
       { "4[7]"         , { "4 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 4 } },
       { "4[M7]"        , { "4 [ M7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_M7   ,                               command::chord_degree, 4 } },
       { "5[7]"         , { "5 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 5 } },
+      { "5 slash 7"    , { "5/7"           , nullptr               }, { command::chord_bass_degree, 7, command::chord_degree, 5 } },
       { "6[7]"         , { "6 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 6 } },
       { "7[7]"         , { "7 [ 7 ]"       , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    ,                               command::chord_degree, 7 } },
       { "7 swap[7]"    , { "7〜[ 7 ]"      , nullptr               }, { command::chord_modifier, KANTANMusic_Modifier_7    , command::chord_minor_swap, 1, command::chord_degree, 7 } },
