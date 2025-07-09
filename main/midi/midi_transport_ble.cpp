@@ -372,7 +372,6 @@ void MIDI_Transport_BLE::setUseTxRx(bool use_tx, bool use_rx)
         _pClient = nullptr;
       }
       BLEClient* pClient = BLEDevice::createClient();
-      _pClient = pClient;
 
       pClient->setClientCallbacks(&myClientCallback);
 /*
@@ -396,6 +395,7 @@ while (!pClient->setMTU(mtu)) {
         // fflush(stdout);
         M5.delay(16);
       } while (!pClient->isConnected());
+      _pClient = pClient;
 
       // printf("\n");
       // fflush(stdout);
