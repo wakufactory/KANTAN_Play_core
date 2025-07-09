@@ -775,6 +775,7 @@ Button Index mapping
       "♯"   , nullptr, "dim"  , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_dim  },
       "♭"   , nullptr, "m7-5" , { command::chord_semitone, 1,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
       "♯"   , nullptr, "m7-5" , { command::chord_semitone, 2,                               command::chord_modifier, KANTANMusic_Modifier_m7_5 },
+      "5/7" , nullptr, nullptr, { command::chord_bass_degree, 7, command::chord_degree, 5 },
       nullptr,nullptr,nullptr, {},
     };
   };
@@ -899,8 +900,8 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 4;
-    static constexpr const uint32_t app_version_patch = 2;
-    static constexpr const char app_version_string[] = "042";
+    static constexpr const uint32_t app_version_patch = 3;
+    static constexpr const char app_version_string[] = "043";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";
