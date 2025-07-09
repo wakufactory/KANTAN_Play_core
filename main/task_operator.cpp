@@ -342,6 +342,7 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
   case def::command::chord_beat:
   case def::command::chord_step_reset_request:
   case def::command::autoplay_switch:
+  case def::command::panic_stop:
     system_registry.player_command.addQueue(command_param, is_pressed);
     break;
 
@@ -775,14 +776,6 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
         break;
       }
       system_registry.checkSongModified();
-    }
-    break;
-
-  case def::command::panic_stop:
-    if (is_pressed) {
-      for (int i = 0; i < 16; ++i) { // CC#120はすべてのMIDI音を停止する
-        system_registry.midi_out_control.setControlChange(i, 120, 0);
-      }
     }
     break;
   }

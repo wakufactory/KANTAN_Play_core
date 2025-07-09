@@ -39,22 +39,23 @@ public:
 
   void setInstaChordLink(bool enable, def::command::instachord_link_dev_t dev, def::command::instachord_link_style_t style) {
     _flg_instachord_link = enable;
+    // 演奏デバイスがInstaChordの場合はアウトプット有効とする
     _flg_instachord_out = (dev == def::command::instachord_link_dev_t::icld_instachord);
     _flg_instachord_pad = (style == def::command::instachord_link_style_t::icls_pad);
   }
 
   static void task_func(subtask_midi_t* me)
   {
+    auto midi = &(me->_midi);
     registry_t::history_code_t history_code_midi_out = 0;
-    uint32_t prev_on_beat_msec;
+    uint32_t prev_on_beat_msec = 0;
     uint8_t prev_midi_volume = 0;
     bool prev_tx_enable = false;
     bool prev_rx_enable = false;
     uint8_t prev_slot_key = 255;
-    uint8_t channel_volume[def::midi::channel_max];
-    uint8_t program_number[def::midi::channel_max];
+    uint8_t channel_volume[def::midi::channel_max] = { 0, };
+    uint8_t program_number[def::midi::channel_max] = { 0, };
     memset(channel_volume, 100, sizeof(channel_volume));
-    auto midi = &(me->_midi);
 
     uint8_t tx_count = 0;
     uint8_t rx_count = 0;
@@ -379,8 +380,6 @@ void task_midi_t::task_func(task_midi_t* me)
     auto iclink_dev = system_registry.midi_port_setting.getInstaChordLinkDev();
     auto iclink_style = system_registry.midi_port_setting.getInstaChordLinkStyle();
     if (prev_iclink_port != iclink_port || prev_iclink_dev != iclink_dev || prev_iclink_style != iclink_style) {
-      // 演奏デバイスがInstaChordの場合はアウトプット有効とする
-      // bool output = (iclink_dev == def::command::instachord_link_dev_t::icld_instachord);
       switch (prev_iclink_port) {
       case def::command::instachord_link_port_t::iclp_ble:
         ble_midi_subtask.setInstaChordLink(false, iclink_dev, iclink_style);
@@ -397,8 +396,8 @@ void task_midi_t::task_func(task_midi_t* me)
       prev_iclink_port = iclink_port;
       prev_iclink_dev = iclink_dev;
       prev_iclink_style = iclink_style;
-      // InstaChord Linkモードのときは、チャンネルボリュームの最大値を 85 にする。
-      uint8_t chvol_max = 85;
+      // InstaChord Linkモードのときは、チャンネルボリュームの最大値を 75 にする。
+      uint8_t chvol_max = 75;
 
       switch (iclink_port) {
       case def::command::instachord_link_port_t::iclp_ble:

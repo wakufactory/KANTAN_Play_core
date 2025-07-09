@@ -884,6 +884,7 @@ Button Index mapping
 
     static constexpr const int autorelease_msec = 5000; // コード演奏モードでの 自動ノートオフまでの時間 5秒
     static constexpr const float arpeggio_reset_timeout_beats = 4.2f;
+    static constexpr const float auto_beat_reset_timeout_beats = 2.0f;
 
     static constexpr const int16_t step_per_beat_min = 1;  // 1ビートあたりのステップ数の最小値
     static constexpr const int16_t step_per_beat_default = 2; // 1ビートあたりのステップ数の初期値
@@ -898,8 +899,8 @@ Button Index mapping
 
     static constexpr const uint32_t app_version_major = 0;
     static constexpr const uint32_t app_version_minor = 4;
-    static constexpr const uint32_t app_version_patch = 0;
-    static constexpr const char app_version_string[] = "040";
+    static constexpr const uint32_t app_version_patch = 2;
+    static constexpr const char app_version_string[] = "042";
     static constexpr const uint32_t app_version_raw = app_version_major<<16|app_version_minor<<8|app_version_patch;
 
     static constexpr const char url_manual[] = "https://kantan-play.com/core/manual/";

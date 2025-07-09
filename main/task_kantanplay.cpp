@@ -97,6 +97,9 @@ bool task_kantanplay_t::commandProccessor(void)
   case def::command::chord_step_reset_request:
     procChordStepResetRequest(command_param, is_pressed);
     break;
+  case def::command::panic_stop:
+    resetStepAndMute();
+    break;
 
   case def::command::autoplay_switch:
     if (is_pressed)
@@ -129,8 +132,11 @@ bool task_kantanplay_t::commandProccessor(void)
             break;
         }
       }
-    // M5_LOGV("autoplay %d", (int)autoplay);
+      // M5_LOGV("autoplay %d", (int)autoplay);
       system_registry.runtime_info.setChordAutoplayState(autoplay);
+      if (autoplay == def::play::auto_play_mode_t::auto_play_none) {
+        resetStepAndMute();
+      }
     }
     break;
   }
@@ -368,8 +374,17 @@ void task_kantanplay_t::procChordBeat(const def::command::command_param_t& comma
     setOnbeatCycle(_current_usec - _reactive_onbeat_usec);
     _reactive_onbeat_usec = _current_usec;
 
+    // インスタコードリンクのパッド演奏時
+    auto iclink_port = system_registry.midi_port_setting.getInstaChordLinkPort();
+    auto iclink_style = system_registry.midi_port_setting.getInstaChordLinkStyle();
+    bool iclink_pad_mode
+      = ((iclink_port != def::command::instachord_link_port_t::iclp_off)
+      && (iclink_style == def::command::instachord_link_style_t::icls_pad)
+      );
+
     if ((auto_play != def::play::auto_play_mode_t::auto_play_none)
-     || (offbeat_style != def::play::offbeat_style_t::offbeat_self)) {
+     || (offbeat_style != def::play::offbeat_style_t::offbeat_self)
+     || iclink_pad_mode) {
       updateOffbeatTiming();
     }
   } else {
@@ -414,9 +429,11 @@ void task_kantanplay_t::setOnbeatCycle(int32_t usec)
   // 一定時間経過後にアルペジエータを先頭に戻す時間を更新する
   _arpeggio_reset_remain_usec = song_tempo * def::app::arpeggio_reset_timeout_beats;
 
-  // ステップが強制リセットされた後や無操作時間が長かった場合などは値が極端に小さくなるので、
-  // ここで指定値を捨ててソングデータのテンポに基づいた値に変更する
-  if (usec < 16384) {
+  // 無効値の場合はソングデータのテンポに基づいた値に変更する。
+  //  - ステップが強制リセットされた後
+  //  - ソングデータのオンビートサイクルの2倍以上の値になっている場合
+  //  - チャタリングなどで極端に小さい値の場合
+  if ((usec < 16384) || (usec > (int32_t)(song_tempo * def::app::auto_beat_reset_timeout_beats))) {
     usec = song_tempo;
     _reactive_onbeat_usec = _current_usec;
   }
@@ -940,6 +957,28 @@ void task_kantanplay_t::chordStepReset(void)
   }
 }
 
+void task_kantanplay_t::resetStepAndMute(void)
+{
+// 各種自動処理のタイミングをリセットする
+  _reactive_onbeat_cycle_usec = -1;
+  _auto_play_onbeat_remain_usec = -1;
+  _auto_play_offbeat_remain_usec = -1;
+  _auto_play_input_tolerating_remain_usec = -1;
+
+  // アルペジエータも先頭に戻す
+  _step_reset_request = true;
+  for (int part_index = 0; part_index < def::app::max_chord_part; ++part_index) {
+    system_registry.chord_play.setPartStep(part_index, -1);
+    // 各パートの音を停止する
+    chordNoteOff(part_index);
+  }
+
+  for (int i = 0; i < 16; ++i) { // CC#120はすべてのMIDI音を停止する
+    system_registry.midi_out_control.setControlChange(i, 120, 0);
+  }
+  _arpeggio_reset_remain_usec = 1024;
+}
+
 
 
 
@@ -1026,7 +1065,7 @@ void task_kantanplay_t::setPitchManage(uint8_t part, uint8_t pitch, uint8_t midi
     press_usec = -1;
   }
 
-  if (velocity > 127) { velocity = 127; }
+  // if ((velocity > 127) { velocity = 127; }
 
   {
   // M5_LOGV("part: %d, pitch: %d, midi_ch: %d, note_number: %d, velocity: %d, press_usec: %d, release_usec: %d", part, pitch, midi_ch, note_number, velocity, press_usec, release_usec);
