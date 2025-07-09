@@ -1676,7 +1676,7 @@ public:
         x_scroll_current = x_scroll_target;
       }
     }
-    bool isEnabled = system_registry.chord_play.getPartNextEnable(_part_index);
+    bool isEnabled = partinfo->getEnabled();
     if (_isEnabled != isEnabled) {
       _isEnabled = isEnabled;
       flg_update = true;
@@ -1794,8 +1794,7 @@ public:
 
     bool clear_confirm = system_registry.chord_play.getConfirm_AllClear();
 
-    bool isEnabled = system_registry.chord_play.getPartNextEnable(_part_index);
-    // bool isEnabled = partinfo->getNextEnabled();
+    bool isEnabled = partinfo->getEnabled();
 
     int r = (std::min(_client_rect.w , _client_rect.h) + 12) / 24;
     { // 背景ドット描画
@@ -3434,14 +3433,15 @@ void gui_t::procTouchControl(const m5::touch_detail_t& td)
         system_registry.operator_command.addQueue( { def::command::part_edit, i+1 } );
       } else
       {
-        bool next_enabled = system_registry.chord_play.getPartNextEnable(i);
+        auto partinfo = &(system_registry.current_slot->chord_part[i].part_info);
+        bool next_enabled = partinfo->getEnabled();
         if (td.wasClicked()
           || td.isFlicking()
           || (td.wasPressed() && !next_enabled))
         {
           if ((part_change_mask & (1 << i))) {
             part_change_mask &= ~(1 << i);
-            system_registry.chord_play.setPartNextEnable(i, !next_enabled);
+            partinfo->setEnabled(!next_enabled);
           }
         }
       }

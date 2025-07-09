@@ -46,7 +46,7 @@ static uint32_t getColorByCommand(const def::command::command_param_t &command_p
   case def::command::part_on:
   case def::command::part_off:
     color = system_registry.color_setting.getButtonPartColor();
-    if (!system_registry.chord_play.getPartNextEnable(command_param.getParam() - 1)) {
+    if (!system_registry.current_slot->chord_part[command_param.getParam() - 1].part_info.getEnabled()) {
       color = (color >> 1) & 0x7F7F7F;
     }
     break;
@@ -547,7 +547,8 @@ void task_operator_t::commandProccessor(const def::command::command_param_t& com
     if (is_pressed) {
       uint8_t part_index = param - 1;
       // パートオンまたは編集の場合は当該パートを有効化する
-      system_registry.chord_play.setPartNextEnable(part_index, def::command::part_off != command);
+      bool en = def::command::part_off != command;
+      system_registry.current_slot->chord_part[part_index].part_info.setEnabled(en);
       if (def::command::part_edit == command)
       { // 編集に入る前にバックアップする
         system_registry.backup_song_data.assign(system_registry.song_data);

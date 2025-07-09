@@ -326,11 +326,18 @@ void task_kantanplay_t::procChordDegree(const def::command::command_param_t& com
   if (playflag)
   {
     if (auto_play == def::play::auto_play_mode_t::auto_play_none) {
-      auto param = is_pressed
-                 ? def::command::step_advance_t::on_beat
-                 : def::command::step_advance_t::off_beat;
-      // 手動演奏の場合はここでステップ進行コマンドを発行する
-      system_registry.player_command.addQueue( { def::command::chord_beat, param } );
+      // インスタコードリンクのパッド演奏時は処理を分岐
+      auto iclink_port = system_registry.midi_port_setting.getInstaChordLinkPort();
+      auto iclink_style = system_registry.midi_port_setting.getInstaChordLinkStyle();
+      bool iclink_pad_mode
+       = ((iclink_port != def::command::instachord_link_port_t::iclp_off)
+       && (iclink_style == def::command::instachord_link_style_t::icls_pad)
+       );
+      if (!iclink_pad_mode) {
+        // 手動演奏の場合はここでステップ進行コマンドを発行する
+        // オモテ拍・ウラ拍の区別は is_pressedフラグで行う
+        system_registry.player_command.addQueue( { def::command::chord_beat, 0 }, is_pressed );
+      }
     } else if (_auto_play_onbeat_remain_usec < 0) {
       // 自動演奏の開始待ち受け状態の場合はこのタイミングで自動演奏の開始
       _auto_play_onbeat_remain_usec = 0;
@@ -341,9 +348,8 @@ void task_kantanplay_t::procChordDegree(const def::command::command_param_t& com
 
 void task_kantanplay_t::procChordBeat(const def::command::command_param_t& command_param, const bool is_pressed)
 {
-  if (!is_pressed) { return; }
-  // パラメータが 1のときオンビート、それ以外のときはオフビート扱いとする
-  bool on_beat = command_param.getParam() == def::command::step_advance_t::on_beat;
+  // is_pressed==trueをオンビート、 falseをオフビート扱いとする
+  auto on_beat = is_pressed;
 
 // この関数が呼ばれるのはユーザーによるDegreeボタン操作時や外部からのパルスがトリガー。
 // 自動演奏によるトリガーは含まれない。
@@ -374,7 +380,8 @@ void task_kantanplay_t::procChordBeat(const def::command::command_param_t& comma
       const uint_fast8_t step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
       if (step_per_beat >= 3) {
         auto offbeat_cycle_usec = _current_usec - _reactive_onbeat_usec;
-        // ウラ拍のタイミングを更新する (TODO : スイングに対応する)
+        // ウラ拍のタイミングを更新する
+        // _auto_play_offbeat_cycle_usecの配列0と1はスウィングを考慮したオフビートの時間間隔を保持する
         uint32_t step_cycle_usec = offbeat_cycle_usec;
         _auto_play_offbeat_remain_usec = step_cycle_usec;
         _auto_play_offbeat_cycle_usec[0] = step_cycle_usec;
@@ -612,7 +619,8 @@ void task_kantanplay_t::chordStepAdvance(bool disable_note_off)
 
       bool current_enable = chord_play->getPartEnable(i);
       if (flgFirstStep || current_step <= 0) {
-        bool next_enable = chord_play->getPartNextEnable(i);
+        auto part = &system_registry.current_slot->chord_part[i];
+        bool next_enable = part->part_info.getEnabled();
         // パートが現在有効かどうかと、次回パートを有効にする指示があるかどうかを比較
         if (current_enable != next_enable) {
           if (flgFirstStep || current_enable) {
