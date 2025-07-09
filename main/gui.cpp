@@ -1303,6 +1303,7 @@ struct ui_main_buttons_t : public ui_base_t
                 );
               note %= 12;
               bool is_minor = false;
+              // 以下の3つの修飾子の場合はメジャー・マイナーの概念がないのでマイナー表示をしない
               if (_modifier == KANTANMusic_Modifier_dim
               || _modifier == KANTANMusic_Modifier_sus4
               || _modifier == KANTANMusic_Modifier_aug) {

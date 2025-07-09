@@ -306,19 +306,16 @@ void task_kantanplay_t::procChordDegree(const def::command::command_param_t& com
 
     if (is_auto && _auto_play_input_tolerating_remain_usec > 0) {
       auto step_per_beat = system_registry.current_slot->slot_info.getStepPerBeat();
-      // if (2 <= step_per_beat)
-      {
-        // 自動演奏でオモテ拍の直後にDegreeボタンが押された場合 (オフビートが鳴る前に押された場合)
-        // ユーザーの演奏タイミングが遅れたものと見做してオモテ拍の処理を強制的に行うことで、
-        // 演奏サイクルが乱れないようにする。
-        _current_beat_index = step_per_beat - 1;
+      // 自動演奏でオモテ拍の直後にDegreeボタンが押された場合 (オフビートが鳴る前に押された場合)
+      // ユーザーの演奏タイミングが遅れたものと見做してオモテ拍の処理を強制的に行うことで、
+      // 演奏サイクルが乱れないようにする。
+      _current_beat_index = step_per_beat - 1;
 //*
-        chordStepAdvance(true);
+      chordStepAdvance(true);
 /*/
-        chordStepAdvance();
-        chordStepPlay();
+      chordStepAdvance();
+      chordStepPlay();
 //*/
-      }
     }
   }
 
