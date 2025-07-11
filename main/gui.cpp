@@ -812,15 +812,21 @@ protected:
       },
     };
     def::command::midiport_info_t _ports[3] = { def::command::midiport_info_t::mp_off };
+    uint8_t _tx_couunt[3] = { 0, 0, 0 };
+    uint8_t _rx_couunt[3] = { 0, 0, 0 };
+    uint16_t _tx_image[3];
+    uint16_t _rx_image[3];
     bool _visible = false;
 
 public:
   void update_impl(draw_param_t *param, int offset_x, int offset_y) override {
     ui_base_t::update_impl(param, offset_x, offset_y);
+    bool updated = false;
     auto p0 = system_registry.runtime_info.getMidiPortStatePC();
     auto p1 = system_registry.runtime_info.getMidiPortStateBLE();
     auto p2 = system_registry.runtime_info.getMidiPortStateUSB();
     if (_ports[0] != p0 || _ports[1] != p1 || _ports[2] != p2) {
+      updated = true;
       _ports[0] = p0;
       _ports[1] = p1;
       _ports[2] = p2;
@@ -836,6 +842,47 @@ public:
           _target_rect.w = w;
         }
       }
+    }
+    uint8_t tx_couunt[3] = {
+      system_registry.runtime_info.getMidiTxCountPC(),
+      system_registry.runtime_info.getMidiTxCountBLE(),
+      system_registry.runtime_info.getMidiTxCountUSB(),
+    };
+    uint8_t rx_couunt[3] = {
+      system_registry.runtime_info.getMidiRxCountPC(),
+      system_registry.runtime_info.getMidiRxCountBLE(),
+      system_registry.runtime_info.getMidiRxCountUSB(),
+    };
+
+    // 通信カウンタのドット移動増分を求める
+    uint8_t shift = (param->current_msec >> 3) - (param->prev_msec >> 3);
+    if (shift) {
+      for (int i = 0; i < 3; ++i) {
+        auto tx = _tx_image[i];
+        if (tx) {
+          _tx_image[i] = tx << shift;
+          updated = true;
+        }
+        auto rx = _rx_image[i];
+        if (rx) {
+          _rx_image[i] = rx << shift;
+          updated = true;
+        }
+      }
+    }
+    for (int i = 0; i < 3; ++i) {
+      if (_tx_couunt[i] != tx_couunt[i]) {
+        _tx_couunt[i] = tx_couunt[i];
+        _tx_image[i] |= 1;
+        updated = true;
+      }
+      if (_rx_couunt[i] != rx_couunt[i]) {
+        _rx_couunt[i] = rx_couunt[i];
+        _rx_image[i] |= 1;
+        updated = true;
+      }
+    }
+    if (updated) {
       param->addInvalidatedRect({offset_x, offset_y, _client_rect.w, _client_rect.h});
     }
   }
@@ -855,7 +902,18 @@ public:
         color = 0xFFFFFFu; break;
       default: break;
       }
-      canvas->drawBitmap(x, y, (const uint8_t*)images[i], 32, 5, color);
+      canvas->drawBitmap(x, y+2, (const uint8_t*)images[i], 32, 5, color);
+      canvas->setColor(0xFFFF00u);
+      for (int j = 0; j < 13; ++j) {
+        if (_tx_image[i] & (1 << j)) {
+          canvas->writePixel(x +     (12 - j), y);
+          canvas->writePixel(x +w-1- (12 - j), y);
+        }
+        if (_rx_image[i] & (1 << j)) {
+          canvas->writePixel(x +     j, y + 1);
+          canvas->writePixel(x +w-1- j, y + 1);
+        }
+      }
     }
   }
 };
@@ -1245,6 +1303,7 @@ struct ui_main_buttons_t : public ui_base_t
                 );
               note %= 12;
               bool is_minor = false;
+              // 以下の3つの修飾子の場合はメジャー・マイナーの概念がないのでマイナー表示をしない
               if (_modifier == KANTANMusic_Modifier_dim
               || _modifier == KANTANMusic_Modifier_sus4
               || _modifier == KANTANMusic_Modifier_aug) {
@@ -1618,7 +1677,7 @@ public:
         x_scroll_current = x_scroll_target;
       }
     }
-    bool isEnabled = system_registry.chord_play.getPartNextEnable(_part_index);
+    bool isEnabled = partinfo->getEnabled();
     if (_isEnabled != isEnabled) {
       _isEnabled = isEnabled;
       flg_update = true;
@@ -1736,8 +1795,7 @@ public:
 
     bool clear_confirm = system_registry.chord_play.getConfirm_AllClear();
 
-    bool isEnabled = system_registry.chord_play.getPartNextEnable(_part_index);
-    // bool isEnabled = partinfo->getNextEnabled();
+    bool isEnabled = partinfo->getEnabled();
 
     int r = (std::min(_client_rect.w , _client_rect.h) + 12) / 24;
     { // 背景ドット描画
@@ -2920,7 +2978,7 @@ struct ui_right_icon_container_t : public ui_container_t
         ui->setTargetRect(tr);
       }
     }
-    ui_container_t::update_impl(param, offset_x, offset_y);
+    ui_base_t::update_impl(param, offset_x, offset_y);
   }
 };
 ui_right_icon_container_t ui_right_icon_container;
@@ -3376,14 +3434,15 @@ void gui_t::procTouchControl(const m5::touch_detail_t& td)
         system_registry.operator_command.addQueue( { def::command::part_edit, i+1 } );
       } else
       {
-        bool next_enabled = system_registry.chord_play.getPartNextEnable(i);
+        auto partinfo = &(system_registry.current_slot->chord_part[i].part_info);
+        bool next_enabled = partinfo->getEnabled();
         if (td.wasClicked()
           || td.isFlicking()
           || (td.wasPressed() && !next_enabled))
         {
           if ((part_change_mask & (1 << i))) {
             part_change_mask &= ~(1 << i);
-            system_registry.chord_play.setPartNextEnable(i, !next_enabled);
+            partinfo->setEnabled(!next_enabled);
           }
         }
       }
